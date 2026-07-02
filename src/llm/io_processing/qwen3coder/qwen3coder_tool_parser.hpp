@@ -145,7 +145,6 @@ public:
     Qwen3CoderToolParser() = delete;
     explicit Qwen3CoderToolParser(ov::genai::Tokenizer& tokenizer, const ToolsSchemas_t& toolSchemas);
 
-    void parse(ParsedOutput& parsedOutput, const std::vector<int64_t>& generatedTokens) override;
     std::optional<rapidjson::Document> parseChunk(const std::string& chunk, const std::vector<int64_t>& tokens, ov::genai::GenerationFinishReason finishReason) override;
     const std::vector<std::string>& getParsingStartTags() const override {
         static const std::vector<std::string> startTags = {TOOL_START_TAG, FUNCTION_NAME_TAG};

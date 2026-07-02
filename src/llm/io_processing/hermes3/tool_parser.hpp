@@ -73,7 +73,6 @@ public:
     explicit Hermes3ToolParser(ov::genai::Tokenizer& tokenizer) :
         BaseOutputParser(tokenizer) {}
 
-    void parse(ParsedOutput& parsedOutput, const std::vector<int64_t>& generatedTokens) override;
     std::optional<rapidjson::Document> parseChunk(const std::string& chunk, const std::vector<int64_t>& tokens, ov::genai::GenerationFinishReason finishReason) override;
     const std::vector<std::string>& getParsingStartTags() const override {
         static const std::vector<std::string> parsingStartTags = {parsingStartTag};

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
 
 #include "../../logging.hpp"
 #include "../../stringutils.hpp"
@@ -263,23 +264,63 @@ void OutputParser::detectAndSetImplicitReasoningStart(const std::string& rendere
 }
 
 ParsedOutput OutputParser::parse(const std::vector<int64_t>& generatedTokens, const bool toolsAvailable) {
-    // Model output is processed by the chain of parsers. Each parser extracts relevant part of the output and fills the ParsedOutput structure.
-    // At the beginning, the content field of ParsedOutput is already filled with decoded content from generatedTokens.
-    // When parser extracts relevant information, it should remove it from the content field, so we don't duplicate it in the final output.
-
     if (spdlog::default_logger_raw()->level() == spdlog::level::trace) {
         SPDLOG_LOGGER_TRACE(llm_calculator_logger, "Raw model output: {}", tokenizer.decode(generatedTokens, ov::genai::skip_special_tokens(false)));
     }
-    ParsedOutput parsedOutput;
-    parsedOutput.content = tokenizer.decode(generatedTokens);
-    if (reasoningParser) {
-        reasoningParser->parse(parsedOutput, generatedTokens);
+    const bool needSpecialTokens = requiresStreamingWithSpecialTokens();
+    const std::string fullText = tokenizer.decode(generatedTokens, ov::genai::skip_special_tokens(!needSpecialTokens));
+
+    ParsedOutput output;
+    std::vector<ToolCall> toolCalls;
+
+    auto processDelta = [&](const std::optional<rapidjson::Document>& delta) {
+        if (!delta.has_value() || !delta->IsObject() || !delta->HasMember("delta"))
+            return;
+        const auto& d = (*delta)["delta"];
+        if (!d.IsObject())
+            return;
+        if (d.HasMember("content") && d["content"].IsString())
+            output.content.append(d["content"].GetString());
+        if (d.HasMember("reasoning_content") && d["reasoning_content"].IsString())
+            output.reasoning.append(d["reasoning_content"].GetString());
+        if (d.HasMember("tool_calls") && d["tool_calls"].IsArray()) {
+            for (const auto& tcEntry : d["tool_calls"].GetArray()) {
+                if (!tcEntry.IsObject() || !tcEntry.HasMember("index"))
+                    continue;
+                const int rawIdx = tcEntry["index"].GetInt();
+                if (rawIdx < 0)
+                    continue;
+                const auto idx = static_cast<size_t>(rawIdx);
+                if (idx >= toolCalls.size())
+                    toolCalls.resize(idx + 1);
+                ToolCall& tc = toolCalls[idx];
+                if (tcEntry.HasMember("id") && tcEntry["id"].IsString())
+                    tc.id = tcEntry["id"].GetString();
+                if (tcEntry.HasMember("function") && tcEntry["function"].IsObject()) {
+                    const auto& fn = tcEntry["function"];
+                    if (fn.HasMember("name") && fn["name"].IsString())
+                        tc.name = fn["name"].GetString();
+                    if (fn.HasMember("arguments") && fn["arguments"].IsString())
+                        tc.arguments.append(fn["arguments"].GetString());
+                }
+            }
+        }
+    };
+
+    if (fullText.empty()) {
+        processDelta(parseChunk("", {}, toolsAvailable, ov::genai::GenerationFinishReason::STOP));
+    } else {
+        for (size_t i = 0; i < fullText.size(); ++i) {
+            const bool isLast = (i == fullText.size() - 1);
+            processDelta(parseChunk(
+                fullText.substr(i, 1), {},
+                toolsAvailable,
+                isLast ? ov::genai::GenerationFinishReason::STOP : ov::genai::GenerationFinishReason::NONE));
+        }
     }
-    // We run tool parser only if the parser is available and tools have been provided in the request.
-    if (toolParser && toolsAvailable) {
-        toolParser->parse(parsedOutput, generatedTokens);
-    }
-    return parsedOutput;
+
+    output.toolCalls = std::move(toolCalls);
+    return output;
 }
 
 std::optional<rapidjson::Document> OutputParser::parseChunk(const std::string& chunkResponse, const std::vector<int64_t>& tokens, const bool toolsAvailable, ov::genai::GenerationFinishReason finishReason) {

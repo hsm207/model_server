@@ -27,57 +27,6 @@
 
 namespace ovms {
 
-void DevstralToolParser::parse(ParsedOutput& parsedOutput, const std::vector<int64_t>& generatedTokens) {
-    // expected format: [TOOL_CALLS]tool_name[ARGS]{"arg1": "value1", ...}
-    if (parsedOutput.content.empty() || generatedTokens.size() <= 0) {
-        SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "No content to parse for tool calls");
-        return;
-    }
-    size_t firstToolTokenIndex;
-    auto it = std::find(generatedTokens.begin(), generatedTokens.end(), this->botTokenId);
-    if (it != generatedTokens.end()) {
-        firstToolTokenIndex = std::distance(generatedTokens.begin(), it);
-    } else {
-        return;
-    }
-
-    size_t firstArgsTokenIndex;
-    auto itArgs = std::find(generatedTokens.begin() + firstToolTokenIndex, generatedTokens.end(), this->argsTokenId);
-    if (itArgs != generatedTokens.end()) {
-        firstArgsTokenIndex = std::distance(generatedTokens.begin(), itArgs);
-    } else {
-        return;
-    }
-    if (firstToolTokenIndex > firstArgsTokenIndex) {
-        SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "First tool token index is greater than first args token index.");
-        return;
-    }
-    std::vector<int64_t> toolNameTokens(generatedTokens.begin() + (firstToolTokenIndex + 1), generatedTokens.begin() + (firstArgsTokenIndex));
-    std::vector<int64_t> argumentsTokens(generatedTokens.begin() + (firstArgsTokenIndex + 1), generatedTokens.end());
-
-    ToolCall toolCall;
-    std::string toolName = tokenizer.decode(toolNameTokens, ov::AnyMap{ov::genai::skip_special_tokens(true)});
-    std::string arguments = tokenizer.decode(argumentsTokens, ov::AnyMap{ov::genai::skip_special_tokens(true)});
-    ovms::trim(toolName);  // trim in case of extra spaces/newlines
-    toolCall.name = toolName;
-    if (arguments.empty()) {
-        arguments = "{}";  // set empty arguments to {}
-    }
-    toolCall.arguments = arguments;
-    toolCall.id = generateRandomId();  // Generate a random ID for the tool call
-    parsedOutput.toolCalls.push_back(toolCall);
-
-    // get subset of generatedTokens starting from begin() to firstArgsTokenIndex
-    std::vector<int64_t> contentTokens;
-    if (firstToolTokenIndex > 0) {
-        contentTokens = std::vector<int64_t>(generatedTokens.begin(), generatedTokens.begin() + firstToolTokenIndex);
-        parsedOutput.content = tokenizer.decode(contentTokens, ov::AnyMap{ov::genai::skip_special_tokens(true)});  // Return only the content till tool call
-    } else {
-        parsedOutput.content = tokenizer.decode(contentTokens, ov::AnyMap{ov::genai::skip_special_tokens(true)});
-    }
-    return;
-}
-
 std::optional<rapidjson::Document> DevstralToolParser::sendFullDelta(ToolCall& toolCall) {
     rapidjson::Document argsDelta;
     argsDelta.Parse(toolCall.arguments.c_str());

@@ -48,7 +48,6 @@ public:
         BaseOutputParser(tokenizer) {}
 
     // Unary
-    void parse(ParsedOutput& parsedOutput, const std::vector<int64_t>& generatedTokens) override;
     // Streaming
     std::optional<rapidjson::Document> parseChunk(const std::string& chunk, const std::vector<int64_t>& tokens, ov::genai::GenerationFinishReason finishReason) override;
 

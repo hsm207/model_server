@@ -28,59 +28,6 @@
 
 namespace ovms {
 
-void MistralToolParser::parse(ParsedOutput& parsedOutput, const std::vector<int64_t>& generatedTokens) {
-    std::vector<std::string> tools;
-
-    if (parsedOutput.content.empty() || generatedTokens.size() <= 0) {
-        SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "No content to parse for tool calls");
-        return;
-    }
-
-    // Parser will consume entire model output only if the first generated token is the beginning of tools token.
-    if (generatedTokens[0] != this->botTokenId) {
-        if (parsedOutput.content.size() >= 2 && parsedOutput.content[0] == '[' && parsedOutput.content[1] == '{') {
-            SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Model output starts with '[{' but begin of tools token is missing. Proceeding with parsing.");
-        } else {
-            SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Begin of tools token or '[{' has not been found in the model output. Exiting parser.");
-            return;
-        }
-    }
-
-    rapidjson::Document toolsDoc;
-    toolsDoc.Parse(parsedOutput.content.c_str());
-
-    if (!toolsDoc.HasParseError() && toolsDoc.IsArray()) {
-        for (auto& toolVal : toolsDoc.GetArray()) {
-            if (!toolVal.IsObject()) {
-                SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Tool call is not a valid JSON object");
-                continue;
-            }
-            ToolCall toolCall;
-            if (toolVal.HasMember("name") && toolVal["name"].IsString()) {
-                toolCall.name = toolVal["name"].GetString();
-            } else {
-                SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Tool call does not contain valid name field");
-                continue;
-            }
-
-            if (toolVal.HasMember("arguments") && toolVal["arguments"].IsObject()) {
-                rapidjson::StringBuffer sb;
-                rapidjson::Writer<rapidjson::StringBuffer> toolWriter(sb);
-                toolVal["arguments"].Accept(toolWriter);
-                toolCall.arguments = sb.GetString();
-            } else {
-                SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Tool call does not contain valid parameters object");
-                continue;
-            }
-            toolCall.id = generateRandomId();  // Generate a random ID for the tool call
-            parsedOutput.toolCalls.push_back(toolCall);
-        }
-        parsedOutput.content.clear();
-    } else {
-        SPDLOG_LOGGER_DEBUG(llm_calculator_logger, "Failed to parse functools content or extract tools array");
-    }
-}
-
 void MistralToolParser::movePostColonContentToUnprocessedBuffer(std::string& chunk) {
     size_t colonPos = chunk.find(':');
     if (colonPos != std::string::npos) {
