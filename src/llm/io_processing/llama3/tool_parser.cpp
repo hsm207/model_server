@@ -54,8 +54,8 @@ std::optional<rapidjson::Document> Llama3ToolParser::parseChunk(const std::strin
         return std::nullopt;
     }
 
-    // <|python_tag|> appears
-    if (chunk.find(parsingStartTag) != std::string::npos) {
+    // <|python_tag|> boundary text (synthesised by OutputParser on token-ID detection)
+    if (chunk.find("<|python_tag|>") != std::string::npos) {
         this->startNextToolCall();
         return std::nullopt;  // ignoring the special tag
     }

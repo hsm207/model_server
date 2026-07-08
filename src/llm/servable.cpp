@@ -148,9 +148,7 @@ absl::Status GenAiServable::parseRequest(std::shared_ptr<GenAiServableExecutionC
             return ov::genai::StreamingStatus::RUNNING;
         };
         ov::AnyMap streamerConfig;
-        if ((executionContext->apiHandler->getOutputParser() != nullptr &&
-                executionContext->apiHandler->getOutputParser()->requiresStreamingWithSpecialTokens()) ||
-            !executionContext->apiHandler->getRequest().skipSpecialTokens) {
+        if (!executionContext->apiHandler->getRequest().skipSpecialTokens) {
             streamerConfig.insert(ov::genai::skip_special_tokens(false));
         }
         executionContext->textStreamer = std::make_shared<OVMSTextStreamer>(
@@ -249,9 +247,7 @@ absl::Status GenAiServable::prepareCompleteResponse(std::shared_ptr<GenAiServabl
 
     // Build streamer config once; shared across all per-sequence streamers.
     ov::AnyMap streamerConfig;
-    if ((executionContext->apiHandler->getOutputParser() != nullptr &&
-            executionContext->apiHandler->getOutputParser()->requiresStreamingWithSpecialTokens()) ||
-        !executionContext->apiHandler->getRequest().skipSpecialTokens) {
+    if (!executionContext->apiHandler->getRequest().skipSpecialTokens) {
         streamerConfig.insert(ov::genai::skip_special_tokens(false));
     }
 

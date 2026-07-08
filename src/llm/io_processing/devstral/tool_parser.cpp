@@ -124,6 +124,20 @@ std::optional<rapidjson::Document> DevstralToolParser::parseChunk(const std::str
     }
     if (this->internalState == AWAITING_ARGS_TAG) {
         size_t pos = this->streamContent.find(this->parsingArgsStartTag);
+        if (pos == std::string::npos) {
+            // [ARGS] not found — check if generation has ended (end tag or finish reason).
+            // Flush whatever accumulated as plain content so it is not silently dropped.
+            size_t endPos = this->streamContent.find(this->parsingEndTag);
+            if (endPos != std::string::npos || finishReason != ov::genai::GenerationFinishReason::NONE) {
+                if (endPos != std::string::npos) {
+                    this->streamContent = this->streamContent.substr(0, endPos);
+                }
+                if (!this->streamContent.empty()) {
+                    return parseContentChunk();
+                }
+            }
+            return std::nullopt;
+        }
         if (pos != std::string::npos) {
             this->internalState = PROCESSING_ARGS;
             this->toolName = this->streamContent.substr(0, pos);
@@ -159,6 +173,14 @@ std::optional<rapidjson::Document> DevstralToolParser::parseChunk(const std::str
             arguments = this->streamContent;
         }
 
+        // When the end tag arrives with no preceding argument content and we have already emitted
+        // argument content in prior calls (e.g. char-by-char feeding via parse()), suppress the
+        // spurious "{}" delta that would otherwise be appended to the accumulated arguments.
+        if (arguments.empty() && argumentsEmitted) {
+            this->streamContent = "";
+            return std::nullopt;
+        }
+
         ToolCall toolCall;
         if (!arguments.empty())
             toolCall.arguments = arguments;
@@ -166,6 +188,7 @@ std::optional<rapidjson::Document> DevstralToolParser::parseChunk(const std::str
             toolCall.arguments = "{}";
         toolCall.name = this->toolName;
         this->streamContent = "";
+        argumentsEmitted = !arguments.empty();
         return sendFullDelta(toolCall);
     }
     return std::nullopt;

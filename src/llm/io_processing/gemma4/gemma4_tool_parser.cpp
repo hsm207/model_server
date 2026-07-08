@@ -400,7 +400,7 @@ std::optional<rapidjson::Document> Gemma4ToolParser::parseChunk(const std::strin
             auto content = this->streamingContent.substr(this->streamingPosition);
             this->streamingPosition += content.size();
 
-            for (const std::string& tagToErase : getSpecialTagsToErase()) {
+            for (const std::string& tagToErase : {TURN_END_TAG, TOOL_RESPONSE_START_TAG}) {
                 size_t tagPos = content.find(tagToErase);
                 while (tagPos != std::string::npos) {
                     content.erase(tagPos, tagToErase.length());

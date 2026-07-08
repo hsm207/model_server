@@ -113,16 +113,6 @@ const std::string& OutputParser::StreamOutputCache::getBuffer() const {
 
 std::optional<rapidjson::Document> OutputParser::parseContentChunk(ProcessingPhase newPhase) {
     std::string chunkContent = streamOutputCache.getBuffer();
-    if (toolParser != nullptr) {
-        auto& specialTagsToErase = toolParser->getSpecialTagsToErase();
-        for (const auto& tag : specialTagsToErase) {
-            size_t pos = 0;
-            while ((pos = chunkContent.find(tag, pos)) != std::string::npos) {
-                chunkContent.erase(pos, tag.length());
-            }
-        }
-    }
-
     if (chunkContent.empty() || chunkContent == "") {
         streamOutputCache.clear();
         processingPhase = newPhase;
@@ -178,7 +168,7 @@ std::optional<rapidjson::Document> OutputParser::parseReasoningChunk(const std::
 }
 
 OutputParser::OutputParser(ov::genai::Tokenizer& tokenizer, const std::string toolParserName, const std::string reasoningParserName, const ToolsSchemas_t& toolNameSchemaMap) :
-    tokenizer(tokenizer) {
+    tokenizer(tokenizer), toolParserName(toolParserName), reasoningParserName(reasoningParserName), toolNameSchemaMap(toolNameSchemaMap) {
     if (toolParserName == "llama3") {
         toolParser = std::make_unique<Llama3ToolParser>(tokenizer);
     } else if (toolParserName == "hermes3") {
@@ -211,13 +201,6 @@ OutputParser::OutputParser(ov::genai::Tokenizer& tokenizer, const std::string to
     } else if (!reasoningParserName.empty()) {
         throw std::runtime_error("Unsupported reasoning parser: \"" + reasoningParserName +
                                  "\". Supported reasoning parsers are: " + getSupportedReasoningParserNamesAsString());
-    }
-
-    if (toolParser && reasoningParser) {
-        if (toolParser->requiresStreamingWithSpecialTokens() != reasoningParser->requiresStreamingWithSpecialTokens()) {
-            throw std::runtime_error("Cannot use tool parser " + toolParserName + " with reasoning parser " + reasoningParserName +
-                                     " as they have different requirements for special tokens in streaming mode");
-        }
     }
 }
 
@@ -263,64 +246,51 @@ void OutputParser::detectAndSetImplicitReasoningStart(const std::string& rendere
     return;
 }
 
-ParsedOutput OutputParser::parse(const std::vector<int64_t>& generatedTokens, const bool toolsAvailable) {
-    if (spdlog::default_logger_raw()->level() == spdlog::level::trace) {
-        SPDLOG_LOGGER_TRACE(llm_calculator_logger, "Raw model output: {}", tokenizer.decode(generatedTokens, ov::genai::skip_special_tokens(false)));
+void OutputParser::resetStreamingState() {
+    processingPhase = UNKNOWN;
+    streamOutputCache.clear();
+    // Recreate sub-parsers from stored names so any internal streaming state
+    // (toolCallIndex, jsonBuilder, argumentsDelayWindow, etc.) is fresh.
+    toolParser = nullptr;
+    reasoningParser = nullptr;
+    if (toolParserName == "llama3") {
+        toolParser = std::make_unique<Llama3ToolParser>(tokenizer);
+    } else if (toolParserName == "hermes3") {
+        toolParser = std::make_unique<Hermes3ToolParser>(tokenizer);
+    } else if (toolParserName == "phi4") {
+        toolParser = std::make_unique<Phi4ToolParser>(tokenizer);
+    } else if (toolParserName == "mistral") {
+        toolParser = std::make_unique<MistralToolParser>(tokenizer);
+    } else if (toolParserName == "gptoss") {
+        toolParser = std::make_unique<GptOssToolParser>(tokenizer);
+    } else if (toolParserName == "qwen3coder") {
+        toolParser = std::make_unique<Qwen3CoderToolParser>(tokenizer, toolNameSchemaMap);
+    } else if (toolParserName == "devstral") {
+        toolParser = std::make_unique<DevstralToolParser>(tokenizer, toolNameSchemaMap);
+    } else if (toolParserName == "lfm2") {
+        toolParser = std::make_unique<Lfm2ToolParser>(tokenizer);
+    } else if (toolParserName == "gemma4") {
+        toolParser = std::make_unique<Gemma4ToolParser>(tokenizer);
     }
-    const bool needSpecialTokens = requiresStreamingWithSpecialTokens();
-    const std::string fullText = tokenizer.decode(generatedTokens, ov::genai::skip_special_tokens(!needSpecialTokens));
-
-    ParsedOutput output;
-    std::vector<ToolCall> toolCalls;
-
-    auto processDelta = [&](const std::optional<rapidjson::Document>& delta) {
-        if (!delta.has_value() || !delta->IsObject() || !delta->HasMember("delta"))
-            return;
-        const auto& d = (*delta)["delta"];
-        if (!d.IsObject())
-            return;
-        if (d.HasMember("content") && d["content"].IsString())
-            output.content.append(d["content"].GetString());
-        if (d.HasMember("reasoning_content") && d["reasoning_content"].IsString())
-            output.reasoning.append(d["reasoning_content"].GetString());
-        if (d.HasMember("tool_calls") && d["tool_calls"].IsArray()) {
-            for (const auto& tcEntry : d["tool_calls"].GetArray()) {
-                if (!tcEntry.IsObject() || !tcEntry.HasMember("index"))
-                    continue;
-                const int rawIdx = tcEntry["index"].GetInt();
-                if (rawIdx < 0)
-                    continue;
-                const auto idx = static_cast<size_t>(rawIdx);
-                if (idx >= toolCalls.size())
-                    toolCalls.resize(idx + 1);
-                ToolCall& tc = toolCalls[idx];
-                if (tcEntry.HasMember("id") && tcEntry["id"].IsString())
-                    tc.id = tcEntry["id"].GetString();
-                if (tcEntry.HasMember("function") && tcEntry["function"].IsObject()) {
-                    const auto& fn = tcEntry["function"];
-                    if (fn.HasMember("name") && fn["name"].IsString())
-                        tc.name = fn["name"].GetString();
-                    if (fn.HasMember("arguments") && fn["arguments"].IsString())
-                        tc.arguments.append(fn["arguments"].GetString());
-                }
-            }
-        }
-    };
-
-    if (fullText.empty()) {
-        processDelta(parseChunk("", {}, toolsAvailable, ov::genai::GenerationFinishReason::STOP));
-    } else {
-        for (size_t i = 0; i < fullText.size(); ++i) {
-            const bool isLast = (i == fullText.size() - 1);
-            processDelta(parseChunk(
-                fullText.substr(i, 1), {},
-                toolsAvailable,
-                isLast ? ov::genai::GenerationFinishReason::STOP : ov::genai::GenerationFinishReason::NONE));
-        }
+    if (reasoningParserName == "qwen3") {
+        reasoningParser = std::make_unique<Qwen3ReasoningParser>(tokenizer);
+    } else if (reasoningParserName == "gemma4") {
+        reasoningParser = std::make_unique<Gemma4ReasoningParser>(tokenizer);
+    } else if (reasoningParserName == "gptoss") {
+        reasoningParser = std::make_unique<GptOssReasoningParser>(tokenizer);
     }
+}
 
-    output.toolCalls = std::move(toolCalls);
-    return output;
+bool OutputParser::needSpecialTokensForCurrentDecode(bool userWantsSpecialTokens) const {
+    if (userWantsSpecialTokens) return true;
+    // Always-on parsers (GptOss, Gemma4 reasoning, devstral …)
+    if (toolParser     && toolParser->getParsingConfig().alwaysNeedsSpecialTokens)     return true;
+    if (reasoningParser && reasoningParser->getParsingConfig().alwaysNeedsSpecialTokens) return true;
+    // Tool-call phase only
+    if ((processingPhase == TOOL_CALLS_PROCESSING_TOOL || processingPhase == TOOL_CALLS_WAITING_FOR_TOOL) &&
+        toolParser && toolParser->getParsingConfig().toolCallPhaseNeedsSpecialTokens)
+        return true;
+    return false;
 }
 
 std::optional<rapidjson::Document> OutputParser::parseChunk(const std::string& chunkResponse, const std::vector<int64_t>& tokens, const bool toolsAvailable, ov::genai::GenerationFinishReason finishReason) {
@@ -335,6 +305,32 @@ std::optional<rapidjson::Document> OutputParser::parseChunk(const std::string& c
     bool reasoningParserExistsAndSupportsStreaming = reasoningParser && !reasoningParser->getParsingStartTags().empty() && !reasoningParser->getParsingEndTag().empty();
     bool toolParserExistsAndSupportsStreaming = toolParser && !toolParser->getParsingStartTags().empty();
     bool applyToolParser = toolParserExistsAndSupportsStreaming && toolsAvailable;
+
+    // Token-ID-based boundary detection (highest priority, checked before string matching).
+    // When a start-boundary token is detected its tag text is synthesised into the cache so the
+    // sub-parser's string-based state machine receives the expected boundary string.
+    if (!tokens.empty()) {
+        if (applyToolParser) {
+            const auto& startMap = toolParser->getResolvedStartTokenToTag();
+            for (int64_t tok : tokens) {
+                auto it = startMap.find(tok);
+                if (it != startMap.end()) {
+                    streamOutputCache.add(it->second);  // synthesise start-tag text
+                    return parseToolCallChunk(tokens, finishReason);
+                }
+            }
+        }
+        if (reasoningParserExistsAndSupportsStreaming) {
+            const auto& startMap = reasoningParser->getResolvedStartTokenToTag();
+            for (int64_t tok : tokens) {
+                auto it = startMap.find(tok);
+                if (it != startMap.end()) {
+                    streamOutputCache.add(it->second);
+                    return parseReasoningChunk(tokens, finishReason);
+                }
+            }
+        }
+    }
 
     streamOutputCache.add(chunkResponse);
 

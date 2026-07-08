@@ -334,8 +334,14 @@ void Qwen3CoderToolParser::lazyFillInitToolParametersTypesMap() {
     SPDLOG_DEBUG("Qwen3CoderToolParser created with {} tools", this->toolsParametersTypes.size());
 }
 
-Qwen3CoderToolParser::Qwen3CoderToolParser(ov::genai::Tokenizer& tokenizer, const ToolsSchemas_t& toolSchemas) :
-    BaseOutputParser(tokenizer),
+Qwen3CoderToolParser::Qwen3CoderToolParser(ov::genai::Tokenizer& tokenizer, const ToolsSchemas_t& toolSchemas,
+                                             std::optional<ParsingConfig> configOverride) :
+    BaseOutputParser(tokenizer, [&]() {
+        if (configOverride.has_value()) return std::move(*configOverride);
+        ParsingConfig cfg;
+        cfg.startTags = {TOOL_START_TAG, FUNCTION_NAME_TAG};
+        return cfg;
+    }()),
     toolSchemas(toolSchemas),
     streamParser(this->toolsParametersTypes) {
 }

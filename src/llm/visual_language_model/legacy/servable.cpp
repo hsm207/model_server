@@ -117,9 +117,7 @@ absl::Status VisualLanguageModelLegacyServable::parseRequest(std::shared_ptr<Gen
 
     ov::AnyMap streamerConfig;
     {
-        if ((legacyExecutionContext->apiHandler->getOutputParser() != nullptr &&
-                legacyExecutionContext->apiHandler->getOutputParser()->requiresStreamingWithSpecialTokens()) ||
-            !legacyExecutionContext->apiHandler->getRequest().skipSpecialTokens) {
+        if (!legacyExecutionContext->apiHandler->getRequest().skipSpecialTokens) {
             streamerConfig.insert(ov::genai::skip_special_tokens(false));
         }
         auto ovmsCallback = [& ctx = *legacyExecutionContext](rapidjson::Document delta, bool isLast) -> ov::genai::StreamingStatus {

@@ -24,6 +24,7 @@
 
 #include "../../../llm/io_processing/base_output_parser.hpp"
 #include "../../../llm/io_processing/output_parser.hpp"
+#include "output_parser_test_utils.hpp"
 #include "../../platform_utils.hpp"
 
 using namespace ovms;
@@ -136,13 +137,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithSingleToolCall) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "example_tool");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"arg1\":\"value1\",\"arg2\":42}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -156,7 +156,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithNoToolsInTheRequest) {
         std::string testInput = input;
         auto generatedTensor = lfm2Tokenizer->encode(testInput, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, false);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, false);
         EXPECT_EQ(parsedOutput.content, testInput);
         EXPECT_EQ(parsedOutput.reasoning, "");
 
@@ -173,13 +173,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithObjectArguments) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "dummy");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"config\":{\"name\":\"astro_config\",\"value\":99}}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -194,13 +193,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArguments) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "test1");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"arg1\":\"data1, data2\"}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -213,13 +211,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithListOfStringsAsArgument) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "generate_DNA_sequence");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"length\":100,\"preferences\":[\"G\",\"C\"]}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -232,13 +229,12 @@ TEST_F(LFM2OutputParserTest, ParserToolCallWithBooleanArgument) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "check_status");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"flag\":true}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -251,14 +247,13 @@ TEST_F(LFM2OutputParserTest, ParseTwoToolCallsAtOnce) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 2);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "dummy1");
         EXPECT_EQ(parsedOutput.toolCalls[1].name, "dummy2");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"config\":{\"name\":\"astro_config\",\"value\":99}}");
         EXPECT_EQ(parsedOutput.toolCalls[1].arguments, "{\"config\":{\"name\":\"second_config\",\"value\":199}}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
@@ -273,13 +268,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithArrayArguments) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "sort");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"array\":[42,17,89,5,33],\"order\":\"descending\"}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -292,13 +286,12 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringWithSingleQuotesArguments) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
         ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
         EXPECT_EQ(parsedOutput.toolCalls[0].name, "sort");
-        // Parser removes whitespaces, so we expect arguments value to be without spaces
         EXPECT_EQ(parsedOutput.toolCalls[0].arguments, "{\"array\":[42,17,89,5,33],\"order\":\"descending\"}");
         EXPECT_EQ(parsedOutput.toolCalls[0].id.empty(), false);  // ID should be generated
     }
@@ -313,7 +306,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithThreeToolCalls) {
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
@@ -351,7 +344,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithThreeToolCallsWithContentInB
     for (auto& input : inputs) {
         auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
         std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-        ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+        ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
         EXPECT_EQ(parsedOutput.content, "Before tool calls content. This is some content between tool calls. This is some content between second and third tool call. After tool calls content.");
         EXPECT_EQ(parsedOutput.reasoning, "");
 
@@ -381,7 +374,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithEmptyArguments) {
     std::string input = "<|tool_call_start|>[no_args_tool()]<|tool_call_end|>";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "no_args_tool");
 }
@@ -390,7 +383,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithContentAndNoToolCalls) {
     std::string input = "This is a regular model response without tool calls.";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "This is a regular model response without tool calls.");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 0);
     EXPECT_EQ(parsedOutput.reasoning, "");
@@ -400,7 +393,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallOutputWithContentAndSingleToolCall) {
     std::string input = "This is a content part and next will be a tool call.\n\n<|tool_call_start|>[example_tool(arg1=\"value1\", arg2=42)]<|tool_call_end|>";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "This is a content part and next will be a tool call.\n\n");
     EXPECT_EQ(parsedOutput.reasoning, "");
 
@@ -662,7 +655,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithMissingParentheses) {
     std::string input = "<|tool_call_start|>[broken_tool]<|tool_call_end|>";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     ASSERT_EQ(parsedOutput.toolCalls.size(), 0);
 }
 
@@ -670,7 +663,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithMissingClosingParenthesis) {
     std::string input = "<|tool_call_start|>[broken_tool(arg1=\"value1\"]<|tool_call_end|>";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     ASSERT_EQ(parsedOutput.toolCalls.size(), 0);
 }
 
@@ -679,7 +672,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithArgumentMissingEquals) {
     std::string input = "<|tool_call_start|>[broken(malformed_arg)]<|tool_call_end|>";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     // The tool call is parsed but the argument value will be empty and invalid
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "broken");
@@ -690,7 +683,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingCompariso
     std::string input = R"x(<|tool_call_start|>[search(query="price >= 100, (sale)", limit=5)]<|tool_call_end|>)x";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "search");
@@ -701,7 +694,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingBracesAnd
     std::string input = R"(<|tool_call_start|>[format(template="Hello {name}, items: [a, b, c]", count=3)]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "format");
@@ -713,7 +706,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingSpecialCh
     std::string input = R"(<|tool_call_start|>[execute(code=")" + impl + R"(")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "execute");
@@ -724,7 +717,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingEscapedQu
     std::string input = R"x(<|tool_call_start|>[execute(code="print(\"hello world\")", verbose=true)]<|tool_call_end|>)x";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "execute");
@@ -735,7 +728,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingApostroph
     std::string input = R"(<|tool_call_start|>[log(message="it's a test, isn't it?", level="warn")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "log");
@@ -746,7 +739,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingBackslash
     std::string input = R"(<|tool_call_start|>[read_file(path="C:\Users\test\file.txt", encoding="utf-8")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "read_file");
@@ -757,7 +750,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsArrayWithStringsCon
     std::string input = R"(<|tool_call_start|>[save(lines=['it's the wonderful day', 'My name's Jan', 'That's Johns' car.'])]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "save");
@@ -768,7 +761,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentContainingSingleQuot
     std::string input = R"(<|tool_call_start|>[save(line="I've had line with single quotes")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "save");
@@ -779,7 +772,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsObjectWithStringsCo
     std::string input = R"(<|tool_call_start|>[save(obj={'name':'it's the wonderful day', 'greeting':'Hello, my name's Jan', 'note':'That's Johns' car.'})]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "save");
@@ -790,7 +783,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithStringArgumentsContainingNestedJSO
     std::string input = R"(<|tool_call_start|>[send(payload="{'key': 'value', 'count': 42}", endpoint="api")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "send");
@@ -801,7 +794,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithEmptyStringArgument) {
     std::string input = R"(<|tool_call_start|>[create(name="", value=0)]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "create");
@@ -812,7 +805,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithUnicodeCharactersInArguments) {
     std::string input = R"(<|tool_call_start|>[translate(text="zażółć gęślą jaźń", lang="pl")]<|tool_call_end|>)";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "translate");
@@ -829,7 +822,7 @@ TEST_F(LFM2OutputParserTest, ParseToolCallWithPythonCodeAsArgument) {
         print(f'\n\t{name} lives at {address}\n\r')")]<|tool_call_end|>)x";
     auto generatedTensor = lfm2Tokenizer->encode(input, ov::genai::add_special_tokens(false)).input_ids;
     std::vector<int64_t> generatedTokens(generatedTensor.data<int64_t>(), generatedTensor.data<int64_t>() + generatedTensor.get_size());
-    ParsedOutput parsedOutput = outputParserWithRegularToolParsing->parse(generatedTokens, true);
+    ParsedOutput parsedOutput = ovms::test::parseWithStreamer(*lfm2Tokenizer, *outputParserWithRegularToolParsing, generatedTokens, true);
     EXPECT_EQ(parsedOutput.content, "");
     ASSERT_EQ(parsedOutput.toolCalls.size(), 1);
     EXPECT_EQ(parsedOutput.toolCalls[0].name, "string_tool");
