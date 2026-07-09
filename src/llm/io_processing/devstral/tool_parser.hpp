@@ -55,6 +55,9 @@ public:
 
     static ParsingConfig defaultParsingConfig() {
         ParsingConfig cfg;
+        // [TOOL_CALLS] is always visible as text (alwaysNeedsSpecialTokens=true).
+        // Put it in startTags for reliable text-based detection.
+        cfg.startTags                    = {"[TOOL_CALLS]"};
         cfg.specialTokenStartTags        = {"[TOOL_CALLS]"};
         cfg.endTag                        = "</s>";
         cfg.alwaysNeedsSpecialTokens     = true;

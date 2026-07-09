@@ -303,7 +303,8 @@ std::optional<rapidjson::Document> OutputParser::parseChunk(const std::string& c
     */
 
     bool reasoningParserExistsAndSupportsStreaming = reasoningParser && !reasoningParser->getParsingStartTags().empty() && !reasoningParser->getParsingEndTag().empty();
-    bool toolParserExistsAndSupportsStreaming = toolParser && !toolParser->getParsingStartTags().empty();
+    bool toolParserExistsAndSupportsStreaming = toolParser &&
+        (!toolParser->getParsingStartTags().empty() || !toolParser->getResolvedStartTokenToTag().empty());
     bool applyToolParser = toolParserExistsAndSupportsStreaming && toolsAvailable;
 
     // Token-ID-based boundary detection (highest priority, checked before string matching).

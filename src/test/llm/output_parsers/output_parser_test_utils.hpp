@@ -24,6 +24,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <gtest/gtest.h>
 
 #include "../../../llm/io_processing/base_output_parser.hpp"
 #include "../../../llm/io_processing/output_parser.hpp"
@@ -52,9 +53,15 @@ inline ParsedOutput parseWithStreamer(
     ParsedOutput result;
     std::vector<ToolCall> toolCalls;
 
-    auto callback = [&](rapidjson::Document doc, bool /*isLast*/) {
-        if (!doc.IsObject() || !doc.HasMember("delta"))
+    auto callback = [&](rapidjson::Document doc, bool isLast) {
+        if (!doc.IsObject()) {
+            ADD_FAILURE() << "parseWithStreamer callback received non-object Document (isLast=" << isLast << ")";
             return ov::genai::StreamingStatus::RUNNING;
+        }
+        if (!doc.HasMember("delta")) {
+            // Empty object fired at STOP when parser emitted no final delta — expected, skip silently.
+            return ov::genai::StreamingStatus::RUNNING;
+        }
         const auto& d = doc["delta"];
         if (!d.IsObject())
             return ov::genai::StreamingStatus::RUNNING;
