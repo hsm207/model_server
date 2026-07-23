@@ -18,20 +18,17 @@ All [OpenVINO Model Zoo](https://github.com/openvinotoolkit/open_model_zoo/tree/
 - vehicle-license-plate-detection
 - pedestrian-and-vehicle-detector
 
-**NOTE** Exemplary [configuration file](https://github.com/openvinotoolkit/model_server/blob/main/demos/face_blur/python/config.json) is available in [face_blur demo](https://github.com/openvinotoolkit/model_server/blob/main/demos/face_blur/python/).
 
 # Building custom node library
 
 You can build the shared library of the custom node simply by running command in the context of custom node examples directory:
 ```bash
 git clone https://github.com/openvinotoolkit/model_server && cd model_server/src/custom_nodes
-make NODES=face_blur
 ```
 It will compile the library inside a docker container and save the results in `lib/<OS>/` folder.
 
 You can also select base OS between RH 8.10 (redhat) and Ubuntu 22.04 (ubuntu) by setting `BASE_OS` environment variable.
 ```bash
-make BASE_OS=redhat NODES=face_blur
 ```
 
 # Custom node inputs
