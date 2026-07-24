@@ -47,13 +47,13 @@ set "BAZEL_SHORT_PATH=C:\%output_user_root%"
 set "opt_install_dir=C:\opt"
 
 :: Python 312 needs to be first in the windows path, as well as MSYS tools
-set "setPath=C:\opt;C:\opt\Python312\;C:\opt\Python312\Scripts\;C:\opt\msys64\usr\bin\;c:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\;%PATH%;"
+set "setPath=C:\opt;C:\opt\Python312\;C:\opt\Python312\Scripts\;C:\opt\msys64\usr\bin\;c:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\;%PATH%;"
 set "PYTHONHOME=C:\opt\Python312"
 :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel, wget to PATH
 set "PATH=%setPath%"
 
 :: Bazel compilation settings
-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
 IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
 
 :msvc_error
@@ -62,6 +62,7 @@ goto :exit_build_error
 :msvc_bt
 echo [INFO] Using MSVC %VS_2022_BT%
 set BAZEL_VS=%VS_2022_BT%
+set "BAZEL_VC_FULL_VERSION=14.51.36231"
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::::::::::::::::::::::: Check directories
@@ -264,7 +265,7 @@ IF /I NOT EXIST build (
 )
 cd build
 set "TBB_DIR="
-cmake -G "Visual Studio 17 2022" -DENABLE_SAMPLES=OFF -DENABLE_INTEL_NPU_PROTOPIPE=OFF ..
+cmake -G "Visual Studio 18 2026" -DENABLE_SAMPLES=OFF -DENABLE_INTEL_NPU_PROTOPIPE=OFF ..
 if !errorlevel! neq 0 exit /b !errorlevel!
 cmake --build . --config Release --verbose -j
 if !errorlevel! neq 0 exit /b !errorlevel!
@@ -620,8 +621,8 @@ if "%ENABLE_INTEGRITYCHECK%"=="1" (
     set "SDL_OPS=/GS /sdl /guard:cf /DYNAMICBASE /NXCOMPAT /W4 /WX /LTCG"
 )
 
-:: Expected compilers in CI - -G "Visual Studio 16 2019", local -G "Visual Studio 17 2022" as default
-cmake -T v142 .. -D CMAKE_INSTALL_PREFIX=%opencv_install% -D OPENCV_EXTRA_MODULES_PATH=%opencv_contrib_dir%\modules %opencv_flags% %SDL_OPS%
+:: Expected compilers in CI - -G "Visual Studio 16 2019", local -G "Visual Studio 18 2026" / toolset v145
+cmake -G "Visual Studio 18 2026" -T v145 .. -D CMAKE_INSTALL_PREFIX=%opencv_install% -D OPENCV_EXTRA_MODULES_PATH=%opencv_contrib_dir%\modules %opencv_flags% %SDL_OPS%
 if !errorlevel! neq 0 exit /b !errorlevel!
 cmake --build . --config Release -j %NUMBER_OF_PROCESSORS%
 if !errorlevel! neq 0 exit /b !errorlevel!

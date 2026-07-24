@@ -69,7 +69,7 @@ for /f "usebackq eol=# tokens=1,3" %%A in ("%cd%\versions.mk") do (
 )
 
 :: Bazel compilation settings
-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
 IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
 
 :msvc_error
@@ -82,7 +82,7 @@ set BAZEL_VS=%VS_2022_BT%
 :: Bazel compilation settings end
 :msvc_end
 set "BAZEL_VC=%BAZEL_VS:"=%\VC"
-set "BAZEL_VC_FULL_VERSION=14.44.35207"
+set "BAZEL_VC_FULL_VERSION=14.51.36231"
 
 :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel to PATH
 set "PATH=%setPath%"
