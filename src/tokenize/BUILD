@@ -24,6 +24,7 @@ ovms_cc_library(
     deps = ["//src:libovmslogging",
             "@mediapipe//mediapipe/framework:calculator_framework",
             "//third_party:openvino",
+            "//third_party:genai",
             "@com_github_tencent_rapidjson//:rapidjson",
             "//src/port:rapidjson_stringbuffer",
             "//src/port:rapidjson_writer",

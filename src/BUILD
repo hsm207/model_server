@@ -315,10 +315,8 @@ ovms_cc_library(
     deps = [
         ":libovms_version",
         "//third_party:openvino",
-    ] + select({
-        "//:not_disable_mediapipe": ["//third_party:genai"],
-        "//conditions:default": [],
-    }),
+        "//third_party:genai",
+    ],
     visibility = ["//visibility:public",],
     alwayslink = 1,
 )

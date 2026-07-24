@@ -23,6 +23,7 @@ ovms_cc_library(
     srcs = ["t2s_servable.cpp"],
         deps = [
         "//third_party:genai",
+        "//third_party:openvino",
         "@mediapipe//mediapipe/framework:calculator_framework",
         "//src:libovmslogging",
         "//src:libmodelconfigjsonparser",
@@ -39,6 +40,7 @@ ovms_cc_library(
             "tts_node_initializer.cpp"],
     deps = [
         "//third_party:genai",
+        "//third_party:openvino",
         "@mediapipe//mediapipe/framework:calculator_framework",
         "//src:httppayload",
         "//src:libovmslogging",
