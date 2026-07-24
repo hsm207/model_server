@@ -486,19 +486,19 @@ The benchmark uses the built-in `PerfMetrics` API:
 
 These are exposed directly by `ov_genai.VLMPipeline` when `GenerationConfig` is passed to `generate()`.
 
-### 15.1 Creative-writing benchmark (1024 tokens)
+### 15.1 Creative-writing benchmark (512 tokens)
 
-Prompt: *"Write a mystery-horror short story in the style of Tom Clancy and Stephen King. A man wakes up early in the morning, goes to the bathroom to pee like he always does, but this time nothing comes out. When he looks down, his penis is gone."*
+Prompt: *"Write a psychological suspense short story. Late on their wedding night as the storm rolls in outside their cabin, a bride watches her new husband untying his tie in the antique mirror—and notices his reflection isn't moving in sync with him."*
 
 | Metric | GPU (Iris Xe) | CPU (i7-1260P) |
 |--------|---------------|----------------|
-| TTFT | 3,599 ms | 50,451 ms |
-| TPOT | 354.33 ms/token | 781.15 ms/token |
-| Throughput | **2.82 tokens/s** | **1.28 tokens/s** |
-| Generate duration | **366,103 ms (~6.1 min)** | **849,580 ms (~14.2 min)** |
-| Input tokens | 67 | 67 |
-| Generated tokens | 1024 | 1024 |
-| Saved story | `openvino-artifacts/outputs/story_gpu.txt` | `openvino-artifacts/outputs/story_cpu.txt` |
+| TTFT | 3,763 ms | 50,451 ms |
+| TPOT | 340.88 ms/token | 781.15 ms/token |
+| Throughput | **2.93 tokens/s** | **1.28 tokens/s** |
+| Generate duration | **177,972 ms (~3.0 min)** | **849,580 ms (~14.2 min)** |
+| Input tokens | 52 | 52 |
+| Generated tokens | 512 | 512 |
+| Saved story | `openvino-artifacts/outputs/story_gpu_wedding.txt` | `openvino-artifacts/outputs/story_cpu.txt` |
 
 The GPU scaled much better for long-form generation, completing the story in roughly half the CPU time with a significantly lower TTFT. The CPU run showed much higher first-token latency, likely due to CPU graph optimization and memory layout differences.
 

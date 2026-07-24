@@ -1,7 +1,7 @@
 From 736d11613454ee328869d9fb943f3d17f5e636cd Mon Sep 17 00:00:00 2001
 From: hsm207 <hsm207@users.noreply.github.com>
 Date: Fri, 24 Jul 2026 04:37:35 +0200
-Subject: [PATCH 1/4] build(windows): update build scripts and warning flags
+Subject: [PATCH 1/5] build(windows): update build scripts and warning flags
  for VS 2026 BuildTools (MSVC 14.51)
 
 ---
@@ -147,7 +147,7 @@ index f00948a1..dabe268e 100644
 From fc276b44e58495ca833cef93376ecfad6abbbf1d Mon Sep 17 00:00:00 2001
 From: hsm207 <hsm207@users.noreply.github.com>
 Date: Fri, 24 Jul 2026 04:37:39 +0200
-Subject: [PATCH 2/4] build(bazel): update genai_windows.BUILD globs and
+Subject: [PATCH 2/5] build(bazel): update genai_windows.BUILD globs and
  transitive headers
 
 ---
@@ -197,7 +197,7 @@ index 0f4cb24e..1853af35 100644
 From a5211035ba396a390d6a57cb32320aff9f7289e6 Mon Sep 17 00:00:00 2001
 From: hsm207 <hsm207@users.noreply.github.com>
 Date: Fri, 24 Jul 2026 04:37:43 +0200
-Subject: [PATCH 3/4] build(deps): wire //third_party:genai dependencies into
+Subject: [PATCH 3/5] build(deps): wire //third_party:genai dependencies into
  src Bazel targets
 
 ---
@@ -275,7 +275,7 @@ index 5e8677b8..c32497a8 100644
 From 3e4e4ce22d80ac5919fab522405223271d64a858 Mon Sep 17 00:00:00 2001
 From: hsm207 <hsm207@users.noreply.github.com>
 Date: Fri, 24 Jul 2026 04:37:59 +0200
-Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+Subject: [PATCH 4/5] docs: add Windows VS 2026 build guide and portable patch
  file
 
 ---
@@ -10014,6 +10014,2628 @@ index 00000000..75621c3b
 +-- 
 +2.50.1.windows.1
 +
+-- 
+2.50.1.windows.1
+
+
+From b834d273f87f81026c3b854e1ba8bec9d96918a8 Mon Sep 17 00:00:00 2001
+From: hsm207 <hsm207@users.noreply.github.com>
+Date: Fri, 24 Jul 2026 20:25:56 +0200
+Subject: [PATCH 5/5] docs: clean up stale pending items in specs
+
+---
+ .../openvino-genai-irisxe-gemma4-spec.md      |   10 +-
+ win2026_genai_build.patch                     | 2073 ++++++++++++++---
+ 2 files changed, 1787 insertions(+), 296 deletions(-)
+
+diff --git a/docs/specs/openvino-genai-irisxe-gemma4-spec.md b/docs/specs/openvino-genai-irisxe-gemma4-spec.md
+index 8d850bd1..79c70528 100644
+--- a/docs/specs/openvino-genai-irisxe-gemma4-spec.md
++++ b/docs/specs/openvino-genai-irisxe-gemma4-spec.md
+@@ -368,9 +368,9 @@ Image input is a stretch goal (secondary). CPU-only fallback is an explicit **no
+ | 3. Build & install `openvino` core wheel | ✅ Done | `openvino-2026.4.0-22498-cp314-cp314-win_amd64.whl` installed |
+ | 4. Build & install `openvino_tokenizers` | ✅ Done | `openvino_tokenizers-2026.4.0.0-1-8cfe3eb80f9` installed |
+ | 5. Build & install `openvino.genai` | ✅ Done | `openvino_genai-2026.4.0.0-1-790abd40056` installed |
+-| 6. Download Gemma-4-26B-A4B-IT INT4 model | 🔄 Next | Run `huggingface-cli download` to `openvino-artifacts/models/...` |
+-| 7. Run text-only GPU inference | ⏳ Pending | After model download completes |
+-| 8. Report success or exact failure | ⏳ Pending | After inference test |
++| 6. Download Gemma-4-12B-IT INT4 QAT model | ✅ Done | Downloaded to `openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov` |
++| 7. Run text-only GPU inference | ✅ Done | `VLMPipeline` executed successfully on GPU |
++| 8. Native OVMS VS 2026 compilation | ✅ Done | Compiled OVMS 2026.3.0 natively with MSVC 14.51 against GenAI 2026.4.0.0 |
+ 
+ ## 12. Execution Plan (remaining steps)
+ 
+@@ -545,9 +545,9 @@ The script starts at a configurable `max_new_tokens` (default 4096), generates a
+ 
+ ## 16. OpenAI-Compatible Server Deployment
+ 
+-OVMS v2026.2.1 could not serve the model because its bundled `openvino_genai` predates `gemma4_unified` support. Instead, a minimal **FastAPI** server wraps the working `openvino_genai.VLMPipeline` and exposes the same OpenAI-compatible endpoints.
++> **Evolution Note:** Prebuilt OVMS v2026.2.1 could not serve `gemma4_unified` models. Initially, a minimal FastAPI server was used as a prototype workaround. **This has now been completely resolved by compiling OVMS 2026.3.0 natively from source with Visual Studio 2026 BuildTools (MSVC 14.51)** linked against local OpenVINO GenAI 2026.4.0.0. Full native C++ OVMS serving is documented in [ovms-gemma4-irisxe-spec.md](ovms-gemma4-irisxe-spec.md) and [WIN2026_BUILD_GUIDE.md](../../WIN2026_BUILD_GUIDE.md).
+ 
+-All server files live in the sibling artifacts folder:
++FastAPI prototype server files live in the sibling artifacts folder for reference:
+ 
+ ```text
+ C:\Users\mohds\Documents\GitHub\openvino-artifacts\
+diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+index 75621c3b..25f3854f 100644
+--- a/win2026_genai_build.patch
++++ b/win2026_genai_build.patch
+@@ -272,7 +272,7 @@ index 5e8677b8..c32497a8 100644
+ 2.50.1.windows.1
+ 
+ 
+-From d22501ea50182fb568885d434c19d813bec83ed0 Mon Sep 17 00:00:00 2001
++From 3e4e4ce22d80ac5919fab522405223271d64a858 Mon Sep 17 00:00:00 2001
+ From: hsm207 <hsm207@users.noreply.github.com>
+ Date: Fri, 24 Jul 2026 04:37:59 +0200
+ Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+@@ -281,10 +281,10 @@ Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ---
+  WIN2026_BUILD_GUIDE.md                        |  316 +
+  .../openvino-genai-irisxe-gemma4-spec.md      |  654 ++
+- docs/specs/ovms-gemma4-irisxe-spec.md         |  256 +
++ docs/specs/ovms-gemma4-irisxe-spec.md         |  166 +
+  model_server.code-workspace                   |   29 +
+- win2026_genai_build.patch                     | 6947 +++++++++++++++++
+- 5 files changed, 8202 insertions(+)
++ win2026_genai_build.patch                     | 8528 +++++++++++++++++
++ 5 files changed, 9693 insertions(+)
+  create mode 100644 WIN2026_BUILD_GUIDE.md
+  create mode 100644 docs/specs/openvino-genai-irisxe-gemma4-spec.md
+  create mode 100644 docs/specs/ovms-gemma4-irisxe-spec.md
+@@ -1275,266 +1275,176 @@ index 00000000..8d850bd1
+ +```
+ diff --git a/docs/specs/ovms-gemma4-irisxe-spec.md b/docs/specs/ovms-gemma4-irisxe-spec.md
+ new file mode 100644
+-index 00000000..bff24466
++index 00000000..183dcb9b
+ --- /dev/null
+ +++ b/docs/specs/ovms-gemma4-irisxe-spec.md
+-@@ -0,0 +1,256 @@
++@@ -0,0 +1,166 @@
+ +# OpenVINO Model Server: Serve Gemma-4-12B-IT on Intel Iris Xe iGPU — Spec
+ +
+ +**Short name:** `ovms-gemma4-irisxe`  
+-+**Date:** 2026-07-22  
+-+**Status:**  ❌ Superseded — OVMS v2026.2.1 does not support `gemma4_unified`; replaced by a FastAPI server wrapping `openvino_genai.VLMPipeline`.  
+-+**Author:** Buffy (assistant)  
+++**Date:** 2026-07-24  
+++**Status:** ✅ **VERIFIED & WORKING** — Native OVMS 2026.3.0 compiled on Windows (MSVC 14.51 / VS 2026 BuildTools) linked against local OpenVINO GenAI 2026.4.0.0. Full GPU acceleration for `gemma-4-12B-it-qat-int4-ov` (`gemma4_unified` multi-modal architecture) via OpenAI Chat Completions (`/v3/chat/completions`) & OpenAI Responses API (`/v3/responses`).  
+++**Author:** Pair-programmed by User & Antigravity  
+ +**Host:** Windows 11, Intel Core i7-1260P, Intel Iris Xe iGPU, 32 GB RAM  
+-+**Model:** `HarmenWessels/gemma-4-12B-it-qat-int4-ov` (already exported OpenVINO IR, ~6–7 GB)  
+-+**Artifact folder:** `C:\Users\mohds\Documents\GitHub\openvino-artifacts` (sibling to openvino repo)  
+++**Model:** `HarmenWessels/gemma-4-12B-it-qat-int4-ov` (~12B INT4 QAT, ~6–7 GB on disk)  
+++**Inference Hub:** `C:\Users\mohds\Documents\GitHub\openvino-artifacts`  
+++**Build Source Repo:** `C:\Users\mohds\Documents\GitHub\model_server`  
+ +
+ +---
+ +
+-+## 1. Goal
+-+
+-+Run the Gemma-4-12B-IT INT4 QAT model through **OpenVINO Model Server (OVMS)** on the local Windows 11 machine, using the **Intel Iris Xe iGPU** for inference. Expose the model via the **OpenAI-compatible API endpoint** and test it with both `curl` and the Python `openai` client.
+-+
+-+The test prompt is:
+-+
+-+> **"Who is the president of Malaysia?"**
+++## 1. Executive Summary & Architecture
+ +
+-+---
+-+
+-+## 2. Why OVMS?
+++This specification defines the production architecture for building, deploying, and serving **Gemma 4 12B** on GPU using **OpenVINO Model Server (OVMS)**.
+ +
+-+So far the model was called directly from `openvino_genai.VLMPipeline`. Moving to OVMS turns the model into a network service that other tools can call via the OpenAI API. This is a stepping stone toward integration with chat UIs, multi-client apps, and production deployments.
+-+
+-+**However, this path was abandoned.** See section 11.
+++### The 2-Hub Design Pattern:
+++1. **`model_server` (Build Engineering Workspace):** Contains C++ source modifications, Bazel rules, VS 2026 build scripts, and exports the deployment package `dist\windows\ovms.zip`.
+++2. **`openvino-artifacts` (Inference Deployment Hub):** Contains downloaded Hugging Face model weights (`models/`), GPU compilation cache (`cache/`), server configuration (`ovms_config.json`), extracted binary runtime (`ovms/`), and inference client test scripts.
+ +
+ +---
+ +
+-+## 3. Prerequisites
+-+
+-+| Item | Status | Details |
+-+|------|--------|---------|
+-+| OpenVINO core + GenAI built from source | ✅ Done | `openvino` 2026.4.0, `openvino_genai` 2026.4.0.0 |
+-+| Model IR downloaded | ✅ Done | `openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov` |
+-+| GPU runtime | ✅ Done | Level Zero (`GPU_RT_TYPE=ZE`) working on Iris Xe |
+-+| Microsoft Visual C++ Redistributable | ✅ Likely present | Already required by the OpenVINO build; verify if OVMS fails to start |
+-+| OVMS Windows binary | ⏳ Pending | Download `ovms_windows_python_on.zip` or `ovms_windows_python_off.zip` |
+-+| OpenAI Python client | ⏳ Pending | `pip install openai` into the `.venv` |
+++## 2. End-to-End 4-Step Deployment Blueprint
+ +
+-+---
+-+
+-+## 4. OVMS Installation on Windows (Bare Metal)
+-+
+-+### 4.1 Download
+-+
+-+Download the latest OVMS Windows release from the GitHub releases page:
+-+
+-+```text
+-+https://github.com/openvinotoolkit/model_server/releases
+ +```
+-+
+-+Recommended archive:
+-+
+-+- `ovms_windows_python_on.zip` — includes Python support (useful for GenAI chat templates).
+-+- `ovms_windows_python_off.zip` — smaller C++-only build.
+-+
+-+Extract to a dedicated folder, e.g.:
+-+
+-+```text
+-+C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
++++-----------------------------------------------------------------------------------+
+++| STEP 1: BUILD (in model_server)                                                  |
+++| Compile ovms.exe natively with MSVC 14.51 (VS 2026) against GenAI 2026.4.0.0.    |
+++| Command: windows_build.bat opt --with_python                                     |
+++| Output:  dist\windows\ovms.zip                                                   |
++++-----------------------------------------------------------------------------------+
+++                                        |
+++                                        v
++++-----------------------------------------------------------------------------------+
+++| STEP 2: DEPLOY (to openvino-artifacts)                                           |
+++| Extract release archive into the Inference Deployment Hub.                       |
+++| Destination: C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms\            |
++++-----------------------------------------------------------------------------------+
+++                                        |
+++                                        v
++++-----------------------------------------------------------------------------------+
+++| STEP 3: LAUNCH (Server Execution on GPU)                                         |
+++| Initialize environment and launch server pointing to MediaPipe graph.            |
+++| Command: call ovms\setupvars.bat && ovms\ovms.exe --config_path ovms_config.json |
++++-----------------------------------------------------------------------------------+
+++                                        |
+++                                        v
++++-----------------------------------------------------------------------------------+
+++| STEP 4: INFER (OpenAI API Verification)                                          |
+++| Execute live queries via OpenAI Python SDK (v2.48.0) or Responses API (/v3/responses)|
++++-----------------------------------------------------------------------------------+
+ +```
+ +
+-+### 4.2 Initialize environment
+-+
+-+In every new shell that runs OVMS:
+-+
+-+```cmd
+-+cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+-+setupvars.bat
+-+```
+++---
+ +
+-+This sets the required `PATH` and other environment variables.
+++## 3. Step 1: Building OVMS from Source
+ +
+-+### 4.3 Verify binary
+++For detailed Bazel settings, dependency staging, and VS 2026 MSVC toolset configurations, refer to:  
+++📖 **[WIN2026_BUILD_GUIDE.md](../../WIN2026_BUILD_GUIDE.md)**
+ +
+ +```cmd
+-+ovms.exe --version
+++cd /d C:\Users\mohds\Documents\GitHub\model_server
+++windows_build.bat opt --with_python
+++windows_create_package.bat opt --with_python
+ +```
+-+
+-+Expected: version string printed.
+++*Generates package:* `C:\Users\mohds\Documents\GitHub\model_server\dist\windows\ovms.zip`
+ +
+ +---
+ +
+-+## 5. Model Preparation
+-+
+-+### 5.1 Current model layout
+-+
+-+```textnopenvino-artifacts/models/gemma-4-12B-it-qat-int4-ov/
+-+├── openvino_language_model.xml / .bin
+-+├── openvino_text_embeddings_model.xml / .bin
+-+├── openvino_vision_embeddings_model.xml / .bin
+-+├── openvino_tokenizer.xml / .bin
+-+├── openvino_detokenizer.xml / .bin
+-+├── config.json
+-+├── generation_config.json
+-+├── tokenizer.json
+-+├── tokenizer_config.json
+-+├── preprocessor_config.json
+-+├── processor_config.json
+-+├── chat_template.jinja
+-+└── README.md
+-+```
+++## 4. Step 2: Deploying to `openvino-artifacts`
+ +
+-+### 5.2 OVMS model repository layout
+++Extract the generated `ovms.zip` directly into `openvino-artifacts\ovms\`:
+ +
+-+OVMS expects a versioned model repository. For GenAI/LLM models, point OVMS to the directory containing the model files (IR + config). We will try the simplest layout first:
+++```cmd
+++cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts
+++tar -xf C:\Users\mohds\Documents\GitHub\model_server\dist\windows\ovms.zip -C C:\Users\mohds\Documents\GitHub\openvino-artifacts
+++```
+ +
+++### Directory Structure of `openvino-artifacts`:
+ +```text
+-+openvino-artifacts/models/
+-+└── gemma
+-+    └── 1
+-+        └── <symlink or copy of gemma-4-12B-it-qat-int4-ov contents>
+++openvino-artifacts/
+++├── ovms_config.json                   <-- Root Server Config
+++├── ovms/                              <-- Extracted Binary Runtime
+++│   ├── ovms.exe                       <-- Native VS 2026 Binary
+++│   ├── setupvars.bat                  <-- Runtime Environment Script
+++│   ├── openvino_genai.dll             <-- Local GenAI 2026.4.0.0 Shared Library
+++│   └── python/                        <-- Embedded Python 3.12 Runtime
+++├── models/
+++│   └── gemma-4-12B-it-qat-int4-ov/   <-- Hugging Face Model Weights & graph.pbtxt
+++└── cache/
+++    └── ov_gpu_cache/                  <-- OpenVINO Level Zero GPU Compiled Kernels
+ +```
+ +
+-+Or use `--model_path` directly to the existing model directory.
+-+
+-+### 5.3 Configuration file (config.json for OVMS)
+++---
+ +
+-+OVMS can be started with a server-side `config.json`. For GenAI models, use the `model_config_list` form:
+++## 5. Step 3: Server Configuration & Launch
+ +
+++### 5.1 Canonical `ovms_config.json` (`openvino-artifacts/ovms_config.json`)
+ +```json
+ +{
+-+  "model_config_list": [
+-+    {
+-+      "config": {
+-+        "name": "gemma",
+-+        "base_path": "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
+-+        "target_device": "GPU",
+-+        "model_settings": {
+-+          "node_type": "ov_genai",
+-+          "model_id": "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
+-+          "device": "GPU"
+++    "model_config_list": [],
+++    "mediapipe_config_list": [
+++        {
+++            "name": "gemma",
+++            "graph_path": "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov/graph.pbtxt"
+ +        }
+-+      }
+-+    }
+-+  ]
+++    ]
+ +}
+ +```
+ +
+-+> **Note:** Exact schema may need adjustment once the OVMS binary is available and tested.
+-+
+-+---
+++### 5.2 GPU Target Device Configuration (`graph.pbtxt`)
+++GPU target execution is specified inside `models/gemma-4-12B-it-qat-int4-ov/graph.pbtxt`:
+ +
+-+## 6. Start the Server
+-+
+-+### 6.1 Option A: Direct CLI
+-+
+-+```cmd
+-+cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+-+setupvars.bat
+-+
+-+ovms.exe --model_name gemma --model_path C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov --port 8000 --target_device GPU
+++```pbtxt
+++node_options: {
+++    [type.googleapis.com / mediapipe.LLMCalculatorOptions]: {
+++        models_path: "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
+++        device: "GPU"
+++    }
+++}
+ +```
+ +
+-+### 6.2 Option B: Config file
+++### 5.3 Launch Server (GPU Mode)
+++In an elevated Command Prompt (`cmd.exe`):
+ +
+ +```cmd
+-+cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+-+setupvars.bat
+-+
+-+ovms.exe --config_path C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms_config.json --port 8000
+++cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts
+++call ovms\setupvars.bat
+++ovms\ovms.exe --config_path ovms_config.json --port 9000 --rest_port 8000
+ +```
+ +
+ +---
+ +
+-+## 7. Test the OpenAI-Compatible Endpoint
+-+
+-+### 7.1 curl test
+-+
+-+```cmd
+-+curl -X POST http://localhost:8000/v1/chat/completions ^
+-+  -H "Content-Type: application/json" ^
+-+  -d "{\"model\": \"gemma\", \"messages\": [{\"role\": \"user\", \"content\": \"Who is the president of Malaysia?\"}], \"max_tokens\": 128}"
+-+```
+-+
+-+### 7.2 Python client test
+++## 6. Step 4: Verification & Live Inference
+ +
+++### 6.1 Using the Official OpenAI Python SDK (v2.48.0)
+ +```python
+ +from openai import OpenAI
+ +
+-+client = OpenAI(base_url="http://localhost:8000/v1", api_key="not-needed")
+++client = OpenAI(
+++    base_url="http://localhost:8000/v3",
+++    api_key="unused"
+++)
+ +
+ +response = client.chat.completions.create(
+ +    model="gemma",
+-+    messages=[{"role": "user", "content": "Who is the president of Malaysia?"}],
+-+    max_tokens=128,
+++    messages=[{"role": "user", "content": "who is your daddy?"}],
+++    max_tokens=64
+ +)
+-+print(response.choices[0].message.content)
+-+```
+-+
+-+---
+ +
+-+## 8. Expected Results
+-+
+-+- Server starts without errors.
+-+- GPU is used (`target_device GPU` is honored).
+-+- curl returns a JSON response containing a coherent answer.
+-+- Python client returns the same coherent answer.
+-+
+-+---
+-+
+-+## 9. Known Risks & Mitigations
+-+
+-+| Risk | Likelihood | Mitigation |
+-+|------|------------|------------|
+-+| OVMS Windows GPU support is experimental | Medium | Fall back to CPU only if GPU fails; document exact error |
+-+| Model needs a `graph.pbtxt` for GenAI engine | Medium | Generate one with OpenVINO export tools or use `--task text_generation` / `--task VLM` |
+-+| OpenAI endpoint may differ from `/v1/chat/completions` | Low | Check OVMS docs; use `/v2/models/gemma/generate` as fallback |
+-+| Long model load / compilation on first start | High | Enable OpenVINO cache via `OPENVINO_CACHE_DIR` |
+-+| Port 8000 already in use | Low | Use `--port 8001` or another free port |
+-+
+-+---
+-+
+-+## 10. Success Criteria (Not achieved — see Section 11)
+-+
+-+These criteria were the original goals. The deployment was abandoned after OVMS v2026.2.1 failed to load the model (see Section 11.2). The equivalent functionality was delivered via the FastAPI server documented in `openvino-genai-irisxe-gemma4-spec.md` Section 15.
+-+
+-+1. ~~OVMS binary downloads and runs on Windows 11.~~
+-+2. ~~Model loads on **GPU** (or CPU if GPU is unsupported by OVMS on Windows).~~
+-+3. ~~`curl` to `/v1/chat/completions` returns a response.~~
+-+4. ~~Python `openai` client returns a response.~~
+-+5. ~~Both responses answer the prompt coherently.~~
+-+
+-+---
+-+
+-+## 11. What Actually Happened (Post-Mortem)
+-+
+-+### 11.1 OVMS startup failed
+-+
+-+The OVMS Windows binary (v2026.2.1) was extracted to:
+-+
+-+```text
+-+C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms\ovms
+++print(response.choices[0].message.content)
+ +```
+ +
+-+After setting `vcvars64.bat`, running `setupvars.bat`, and launching with `--task text_generation`, the server failed with:
+++**Output:**  
+++> *"I was developed by Google DeepMind."*
+ +
+-+```text
+-+Unsupported 'gemma4_unified' VLM model type
+++### 6.2 Using the OpenAI Responses API (`POST /v3/responses`)
+++```cmd
+++curl -X POST http://localhost:8000/v3/responses \
+++  -H "Content-Type: application/json" \
+++  -d "{\"model\": \"gemma\", \"input\": \"Who is the Prime Minister of Malaysia?\"}"
+ +```
+ +
+-+### 11.2 Root cause
+-+
+-+OVMS v2026.2.1 ships its own `openvino_genai.dll` (2026.2.x era). It predates the `gemma4_unified` model type, which was added in the 2026.4.0 cycle that we built from source. The model's `config.json` declares `"model_type": "gemma4_unified"`, so the bundled OVMS engine cannot initialize the pipeline.
+-+
+-+### 11.3 Workaround considered
+-+
+-+Build OVMS from source against our locally built `openvino_genai`. This is technically possible but requires Bazel + patching the build scripts for VS2026, and a multi-hour build. It was deemed overkill for a local demo.
+-+
+-+### 11.4 Replacement solution
+-+
+-+A minimal **FastAPI server** was written to wrap the existing `openvino_genai.VLMPipeline` (the one that already works on GPU). It exposes the same `/v3/chat/completions` OpenAI-compatible endpoint that OVMS would have, but uses our 2026.4.0 genai build instead of the older OVMS-bundled one.
+-+
+-+See the main project spec `openvino-genai-irisxe-gemma4-spec.md` for the server implementation, test commands, and results.
+++**Output:**  
+++`"object": "response"`, `"status": "completed"` with answer `"Anwar Ibrahim"`.
+ diff --git a/model_server.code-workspace b/model_server.code-workspace
+ new file mode 100644
+ index 00000000..bd08bdc0
+@@ -1572,10 +1482,10 @@ index 00000000..bd08bdc0
+ +}
+ diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ new file mode 100644
+-index 00000000..78bf8a67
++index 00000000..75621c3b
+ --- /dev/null
+ +++ b/win2026_genai_build.patch
+-@@ -0,0 +1,6947 @@
++@@ -0,0 +1,8528 @@
+ +From 736d11613454ee328869d9fb943f3d17f5e636cd Mon Sep 17 00:00:00 2001
+ +From: hsm207 <hsm207@users.noreply.github.com>
+ +Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -1850,7 +1760,7 @@ index 00000000..78bf8a67
+ +2.50.1.windows.1
+ +
+ +
+-+From 6bff499157eb8e7f1e229e8f5276725d28345c25 Mon Sep 17 00:00:00 2001
+++From d22501ea50182fb568885d434c19d813bec83ed0 Mon Sep 17 00:00:00 2001
+ +From: hsm207 <hsm207@users.noreply.github.com>
+ +Date: Fri, 24 Jul 2026 04:37:59 +0200
+ +Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+@@ -1860,9 +1770,9 @@ index 00000000..78bf8a67
+ + WIN2026_BUILD_GUIDE.md                        |  316 +
+ + .../openvino-genai-irisxe-gemma4-spec.md      |  654 ++
+ + docs/specs/ovms-gemma4-irisxe-spec.md         |  256 +
+-+ model_server.code-workspace                   |   25 +
+-+ win2026_genai_build.patch                     | 5370 +++++++++++++++++
+-+ 5 files changed, 6621 insertions(+)
+++ model_server.code-workspace                   |   29 +
+++ win2026_genai_build.patch                     | 6947 +++++++++++++++++
+++ 5 files changed, 8202 insertions(+)
+ + create mode 100644 WIN2026_BUILD_GUIDE.md
+ + create mode 100644 docs/specs/openvino-genai-irisxe-gemma4-spec.md
+ + create mode 100644 docs/specs/ovms-gemma4-irisxe-spec.md
+@@ -3115,10 +3025,10 @@ index 00000000..78bf8a67
+ ++See the main project spec `openvino-genai-irisxe-gemma4-spec.md` for the server implementation, test commands, and results.
+ +diff --git a/model_server.code-workspace b/model_server.code-workspace
+ +new file mode 100644
+-+index 00000000..f4b1683b
+++index 00000000..bd08bdc0
+ +--- /dev/null
+ ++++ b/model_server.code-workspace
+-+@@ -0,0 +1,25 @@
+++@@ -0,0 +1,29 @@
+ ++{
+ ++	"folders": [
+ ++		{
+@@ -3138,6 +3048,10 @@ index 00000000..78bf8a67
+ ++			"path": "../openvino_tokenizers"
+ ++		},
+ ++		{
++++			"name": "openvino-gemma4-12b",
++++			"path": "../openvino-gemma4-12b"
++++		},
++++		{
+ ++			"name": "openvino-artifacts",
+ ++			"path": "../openvino-artifacts"
+ ++		}
+@@ -3146,10 +3060,10 @@ index 00000000..78bf8a67
+ ++}
+ +diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ +new file mode 100644
+-+index 00000000..e8a3b7e0
+++index 00000000..78bf8a67
+ +--- /dev/null
+ ++++ b/win2026_genai_build.patch
+-+@@ -0,0 +1,5370 @@
+++@@ -0,0 +1,6947 @@
+ ++From 736d11613454ee328869d9fb943f3d17f5e636cd Mon Sep 17 00:00:00 2001
+ ++From: hsm207 <hsm207@users.noreply.github.com>
+ ++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -3424,25 +3338,31 @@ index 00000000..78bf8a67
+ ++2.50.1.windows.1
+ ++
+ ++
+-++From 2ef6929f7588be8b43ca6428f19373c956d0f6ff Mon Sep 17 00:00:00 2001
++++From 6bff499157eb8e7f1e229e8f5276725d28345c25 Mon Sep 17 00:00:00 2001
+ ++From: hsm207 <hsm207@users.noreply.github.com>
+ ++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ ++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ++ file
+ ++
+ ++---
+-++ WIN2026_BUILD_GUIDE.md    |  311 +++
+-++ win2026_genai_build.patch | 4757 +++++++++++++++++++++++++++++++++++++
+-++ 2 files changed, 5068 insertions(+)
++++ WIN2026_BUILD_GUIDE.md                        |  316 +
++++ .../openvino-genai-irisxe-gemma4-spec.md      |  654 ++
++++ docs/specs/ovms-gemma4-irisxe-spec.md         |  256 +
++++ model_server.code-workspace                   |   25 +
++++ win2026_genai_build.patch                     | 5370 +++++++++++++++++
++++ 5 files changed, 6621 insertions(+)
+ ++ create mode 100644 WIN2026_BUILD_GUIDE.md
++++ create mode 100644 docs/specs/openvino-genai-irisxe-gemma4-spec.md
++++ create mode 100644 docs/specs/ovms-gemma4-irisxe-spec.md
++++ create mode 100644 model_server.code-workspace
+ ++ create mode 100644 win2026_genai_build.patch
+ ++
+ ++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ ++new file mode 100644
+-++index 00000000..97c07689
++++index 00000000..a4d30e0e
+ ++--- /dev/null
+ +++++ b/WIN2026_BUILD_GUIDE.md
+-++@@ -0,0 +1,311 @@
++++@@ -0,0 +1,316 @@
+ +++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ +++
+ +++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries.
+@@ -3450,6 +3370,11 @@ index 00000000..78bf8a67
+ +++> **Why This Custom Build is Required:**  
+ +++> Standard upstream prebuilt OVMS binaries support standard LLMs, BUT the **Gemma 4 12B model** (`HarmenWessels/gemma-4-12B-it-qat-int4-ov`) uses the new **`gemma4_unified` multi-modal architecture** (which integrates unified text, vision, and text-embedding sub-pipelines). Building OVMS natively against OpenVINO GenAI 2026.4.0.0 unlocks native C++ auto-detection and execution for `gemma4` tool/reasoning parsers (`gemma4_unified`) on GPU and CPU.
+ +++
+++++> 📚 **Related Specifications:**  
+++++> - **OpenVINO / GenAI / Tokenizers Source Build Spec:** [docs/specs/openvino-genai-irisxe-gemma4-spec.md](docs/specs/openvino-genai-irisxe-gemma4-spec.md)  
+++++> - **OVMS Gemma 4 Integration Architecture Spec:** [docs/specs/ovms-gemma4-irisxe-spec.md](docs/specs/ovms-gemma4-irisxe-spec.md)  
+++++> - **VS Code Suite Workspace:** [model_server.code-workspace](model_server.code-workspace)
+++++
+ +++---
+ +++
+ +++## 1. Patch Architecture & Strategy
+@@ -3754,12 +3679,965 @@ index 00000000..78bf8a67
+ +++
+ +++
+ +++
++++diff --git a/docs/specs/openvino-genai-irisxe-gemma4-spec.md b/docs/specs/openvino-genai-irisxe-gemma4-spec.md
++++new file mode 100644
++++index 00000000..8d850bd1
++++--- /dev/null
+++++++ b/docs/specs/openvino-genai-irisxe-gemma4-spec.md
++++@@ -0,0 +1,654 @@
+++++# OpenVINO + GenAI Source Build & Gemma-4-12B-IT Inference on Intel Iris Xe — Spec
+++++
+++++**Short name:** `openvino-genai-irisxe-gemma4`  
+++++**Date:** 2026-07-21  
+++++**Status:** ✅ GPU inference succeeded — Gemma-4-12B-IT INT4 QAT runs on Iris Xe  
+++++**Author:** Buffy (assistant) with user input from interview rounds  
+++++**Host:** Windows 11, Intel Core i7-1260P, Intel Iris Xe iGPU, 32 GB RAM  
+++++**Target model:** `HarmenWessels/gemma-4-12B-it-qat-int4-ov` (text + image VLM, ~12B params, INT4 QAT, ~6–7 GB on disk)  
+++++
+++++---
+++++
+++++## 1. Goal
+++++
+++++Build from source on the local Windows 11 machine:
+++++
+++++1. `openvino` (core runtime) — this repo, `master` branch  
+++++2. `openvino_tokenizers` — sibling repo, `master` branch  
+++++3. `openvino.genai` — sibling repo, `master` branch (`v2026.4.0.0` area)  
+++++
+++++Then run a Gemma-4 VLM through `ov::genai::VLMPipeline` on the **Intel Iris Xe iGPU** with text generation. The original 26B-A4B target was too large for the iGPU; the final working target is `HarmenWessels/gemma-4-12B-it-qat-int4-ov` (INT4 QAT, ~12B params), which loads and generates successfully on the iGPU.
+++++
+++++---
+++++
+++++## 2. Repository Layout (assumed from interview)
+++++
+++++| Repo | Local path | Branch | Notes |
+++++|------|------------|--------|-------|
+++++| openvino | `C:\Users\mohds\Documents\GitHub\openvino` | `master` | Current working directory |
+++++| openvino_tokenizers | `C:\Users\mohds\Documents\GitHub\openvino_tokenizers` | `master` | Sibling to openvino |
+++++| openvino.genai | `C:\Users\mohds\Documents\GitHub\openvino.genai` | `master` | Sibling to openvino |
+++++| artifacts / model cache | `C:\Users\mohds\Documents\GitHub\openvino-artifacts` | n/a | Sibling folder containing models, caches, and helper scripts |
+++++
+++++> **Assumption to verify:** All three repos exist. If any are missing, the executor must clone them before proceeding.
+++++
+++++---
+++++
+++++## 3. Environment & Constraints
+++++
+++++| Item | Value / Constraint |
+++++|------|--------------------|
+++++| OS | Windows 11 |
+++++| CPU | Intel Core i7-1260P (12C/16T, P-cores + E-cores) |
+++++| iGPU | Intel Iris Xe (integrated, no discrete GPU) |
+++++| GPU memory | 128 MB dedicated + up to ~16 GB shared system RAM |
+++++| RAM | 32 GB |
+++++| Python | 3.14.x at `C:\Python314` |
+++++| Python env | `.venv` inside `C:\Users\mohds\Documents\GitHub\openvino` (must be created/activated) |
+++++| Build tools | **Visual Studio 2026 BuildTools v18.8.0** (MSVC 14.51.36231), CMake, Ninja — installed under `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\` |
+++++| GPU runtime | **Level Zero (ZE)** — verified `ze_loader.dll` present; used successfully for Gemma-4 12B inference. OCL kept as fallback. |
+++++| NPU | Disabled — i7-1260P has no NPU |
+++++| Frontends | Only IR frontend enabled; all framework frontends disabled |
+++++| Meta-plugins | HETERO enabled (user wants future CPU/GPU split exploration); MULTI, AUTO, AUTO_BATCH, PROXY disabled |
+++++| Tests / samples | Disabled to reduce build time |
+++++| Wheel build | **ENABLED** (`-DENABLE_WHEEL=ON`) — evidence: OpenVINO docs state wheels are generated under `<build>/wheels/` only when both `ENABLE_PYTHON` and `ENABLE_WHEEL` are set. |
+++++
+++++### Verified prerequisite locations
+++++
+++++| Tool | Verified path / version |
+++++|------|-------------------------|
+++++| VS 2026 BuildTools root | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\` |
+++++| `vcvars64.bat` | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat` |
+++++| `cl.exe` (x64 host, x64 target) | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64\cl.exe` |
+++++| `cmake.exe` | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe` |
+++++| `ninja.exe` | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe` |
+++++| Standalone CMake | `C:\Program Files\CMake\bin\cmake.exe` |
+++++
+++++> **Important:** These tools are **not** in the default `PATH` of the bash shell. Every build session must start by running `vcvars64.bat` (see build steps below).
+++++
+++++### GPU runtime selection rationale
+++++
+++++The original plan assumed `GPU_RT_TYPE=OCL` with the reasoning that Iris Xe uses OpenCL rather than Level Zero. Verification on this host showed that the Intel GPU driver ships `ze_loader.dll` in `C:\Windows\System32` and in the driver store, so Level Zero is available. OpenVINO's GPU plugin can be built with `-DGPU_RT_TYPE=ZE` (currently documented as experimental but actively maintained). For a 12th Gen Intel iGPU on Windows, Level Zero is the lower-overhead, preferred compute path. The spec therefore switches the build to `ZE`, with OCL documented as a fallback if the ZE build or runtime fails.
+++++
+++++### Non-negotiable constraints from user interview
+++++
+++++- Do **not** use system Python (`C:\Python314`) for the build/run; use the repo-local `.venv`.
+++++- Do **not** enable NPU-related code.
+++++- Optimize for the actual machine (no unnecessary plugins/frontends).
+++++- If GPU OOMs, **fail and report the exact error**; do not silently fall back to CPU (CPU fallback can be tested later as a separate experiment).
+++++- Create a new sibling folder for artifacts and model cache, with an `AGENTS.md` file documenting its purpose.
+++++
+++++---
+++++
+++++## 4. Build Configuration Details
+++++
+++++### 4.1 openvino (core runtime)
+++++
+++++Initialize the build environment first:
+++++
+++++```cmd
+++++cd C:\Users\mohds\Documents\GitHub\openvino
+++++.venv\Scripts\activate.bat
+++++"C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+++++```
+++++
+++++Then configure and build:
+++++
+++++```cmd
+++++cmake -S . -B build -G Ninja ^
+++++    -DCMAKE_BUILD_TYPE=Release ^
+++++    -DENABLE_INTEL_CPU=ON ^
+++++    -DENABLE_INTEL_GPU=ON ^
+++++    -DGPU_RT_TYPE=ZE ^
+++++    -DENABLE_INTEL_NPU=OFF ^
+++++    -DENABLE_OV_ONNX_FRONTEND=OFF ^
+++++    -DENABLE_OV_PADDLE_FRONTEND=OFF ^
+++++    -DENABLE_OV_TF_FRONTEND=OFF ^
+++++    -DENABLE_OV_TF_LITE_FRONTEND=OFF ^
+++++    -DENABLE_OV_PYTORCH_FRONTEND=OFF ^
+++++    -DENABLE_OV_JAX_FRONTEND=OFF ^
+++++    -DENABLE_OV_IR_FRONTEND=ON ^
+++++    -DENABLE_TESTS=OFF ^
+++++    -DENABLE_SAMPLES=OFF ^
+++++    -DENABLE_PYTHON=ON ^
+++++    -DENABLE_WHEEL=ON ^
+++++    -DENABLE_JS=OFF ^
+++++    -DENABLE_OPENVINO_DEBUG=OFF ^
+++++    -DTHREADING=TBB ^
+++++    -DENABLE_PROXY=OFF ^
+++++    -DENABLE_MULTI=OFF ^
+++++    -DENABLE_AUTO=OFF ^
+++++    -DENABLE_AUTO_BATCH=OFF ^
+++++    -DENABLE_HETERO=ON ^
+++++    -DENABLE_TEMPLATE=OFF
+++++```
+++++
+++++Then:
+++++
+++++```cmd
+++++cmake --build build --config Release --parallel
+++++pip install build\wheels\openvino-*.whl
+++++```
+++++
+++++#### Flag rationale
+++++
+++++| Flag | Value | Why |
+++++|------|-------|-----|
+++++| `ENABLE_INTEL_CPU` | ON | CPU inference engine — essential. |
+++++| `ENABLE_INTEL_GPU` | ON | GPU plugin for Iris Xe — uses Level Zero. |
+++++| `GPU_RT_TYPE` | ZE | Modern Intel iGPU path; `ze_loader.dll` verified present. OCL is fallback. |
+++++| `ENABLE_INTEL_NPU` | OFF | i7-1260P has no NPU. |
+++++| `ENABLE_HETERO` | ON | Future CPU/GPU heterogeneous split experiments. |
+++++| `ENABLE_OV_ONNX/PADDLE/TF/TF_LITE/PYTORCH/JAX` | OFF | Framework frontends unnecessary for pre-exported IR. |
+++++| `ENABLE_OV_IR_FRONTEND` | ON | Required — the model is in OpenVINO IR format. |
+++++| `ENABLE_TESTS/SAMPLES` | OFF | Not needed; reduces build time. |
+++++| `ENABLE_PYTHON` / `ENABLE_WHEEL` | ON | Build and package the Python wheel. |
+++++| `THREADING` | TBB | Best CPU threading performance. |
+++++
+++++### 4.2 openvino_tokenizers
+++++
+++++Actual commands used (from a `cmd.exe` window with `vcvars64.bat` and the openvino `.venv` activated):
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino_tokenizers
+++++set OpenVINO_DIR=C:\Users\mohds\Documents\GitHub\openvino\build
+++++rmdir /s /q .py-build-cmake_cache 2>nul
+++++pip install --no-build-isolation --no-deps .
+++++```
+++++
+++++Why this works:
+++++- `--no-build-isolation` keeps the MSVC/Ninja environment from `vcvars64.bat` visible and uses the locally installed `py-build-cmake==0.4.3`.
+++++- `--no-deps` skips trying to install `openvino~=2026.4.0.dev` from PyPI; the locally built `openvino` wheel is already in the venv.
+++++
+++++Result: `openvino_tokenizers-2026.4.0.0-1-8cfe3eb80f9` installed and imports successfully.
+++++
+++++### 4.3 openvino.genai
+++++
+++++Actual commands used (from a `cmd.exe` window with `vcvars64.bat` and the openvino `.venv` activated):
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino.genai
+++++python -m pip install py-build-cmake==0.5.0
+++++set OpenVINO_DIR=C:\Users\mohds\Documents\GitHub\openvino\build
+++++rmdir /s /q .py-build-cmake_cache 2>nul
+++++pip install --no-build-isolation --no-deps .
+++++```
+++++
+++++Notes:
+++++- `openvino.genai` requires `py-build-cmake>=0.5.0`; the tokenizers build used `0.4.3`, so upgrade first.
+++++- `OpenVINO_DIR` points to the **build directory** of the locally built OpenVINO core, where `OpenVINOConfig.cmake` is located.
+++++- `BUILD_TOKENIZERS=OFF` is set in `pyproject.toml`, so it reuses the tokenizers installed above.
+++++
+++++Result: `openvino_genai-2026.4.0.0-1-790abd40056` installed and imports successfully.
+++++
+++++> **Note:** `openvino.genai` must find the OpenVINO built in step 4.1. This is expected to work because the wheel from step 4.1 is installed into the active `.venv`, making `find_package(OpenVINO)` succeed.
+++++
+++++---
+++++
+++++## 5. Prerequisites to Verify Before Building
+++++
+++++Per the user interview, the executor must verify prerequisites first:
+++++
+++++| # | Prerequisite | Status | Details |
+++++|---|--------------|--------|---------|
+++++| 1 | CMake ≥3.26 | ✅ Verified | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe` |
+++++| 2 | Ninja | ✅ Verified | `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe` |
+++++| 3 | VS C++ build tools / `vcvars64.bat` | ✅ Verified | VS 2026 BuildTools v18.8.0, MSVC 14.51.36231 |
+++++| 4 | Python 3.14.x | ✅ Verified | 3.14.0 |
+++++| 5 | `.venv` in openvino repo | ✅ Verified | Exists |
+++++| 6 | Intel Graphics Driver / OpenCL | ✅ Verified | Driver 32.0.101.7088, `opencl.dll` present |
+++++| 7 | Git for Windows | ✅ Verified | 2.47.1.windows.2 |
+++++| 8 | Sibling repos exist | ✅ Verified | `openvino_tokenizers`, `openvino.genai` |
+++++| 9 | openvino submodules | ✅ Verified | Initialized, on `master` |
+++++| 10 | Disk space | ✅ Verified | ~180 GB free on C:, ~171 GB free on G: |
+++++
+++++If any prerequisite is missing, the executor must stop and report the exact missing item rather than proceeding.
+++++
+++++### Build session initialization
+++++
+++++Before running CMake/Ninja in any new shell, initialize the MSVC environment:
+++++
+++++```cmd
+++++"C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+++++```
+++++
+++++Then confirm the tools are reachable:
+++++
+++++```cmd
+++++cl.exe
+++++cmake --version
+++++ninja --version
+++++```
+++++
+++++---
+++++
+++++## 6. Artifact & Model Cache Folder
+++++
+++++Create the sibling folder before first build:
+++++
+++++```cmd
+++++mkdir C:\Users\mohds\Documents\GitHub\openvino-artifacts
+++++cd C:\Users\mohds\Documents\GitHub\openvino-artifacts
+++++```
+++++
+++++Create `AGENTS.md` with content explaining the folder contains build artifacts, model downloads, and cached compiled blobs.
+++++
+++++Actual subfolders:
+++++
+++++```
+++++openvino-artifacts/                   # sibling folder, NOT inside openvino repo
+++++├── AGENTS.md
+++++├── scripts/                          # Python helper scripts
+++++│   ├── inference.py                  # text-only inference script
+++++│   ├── benchmark.py                  # CPU/GPU token-speed benchmark script
+++++│   ├── benchmark_scaling.py          # doubles max_new_tokens until story finishes or OOM
+++++│   ├── download_model.py             # HF model downloader
+++++│   ├── monitor_download.py           # download progress monitor
+++++│   ├── server.py                     # FastAPI OpenAI-compatible server
+++++│   └── test_openai_client.py         # Python OpenAI client test
+++++├── logs/                             # runtime logs
+++++│   ├── server.log
+++++│   ├── gpu_inference.log
+++++│   └── ovms.log
+++++├── outputs/                          # generated stories / outputs
+++++│   ├── story_cpu.txt
+++++│   ├── story_cpu_4096.txt
+++++│   ├── story_gpu.txt
+++++│   ├── story_gpu_4096.txt
+++++│   └── story_gpu_8192.txt
+++++├── models/
+++++│   └── gemma-4-12B-it-qat-int4-ov/   # working 12B INT4 QAT model
+++++└── cache/
+++++    ├── ov_gpu_cache_12b_qat/         # GPU compiled-kernel cache
+++++    └── ov_cpu_cache_12b_qat/         # CPU compiled-kernel cache
+++++```
+++++
+++++> **Note:** The `openvino-artifacts/` directory is intentionally outside the `openvino` git repo. Scripts and stories live here; only the spec file is committed in the `openvino` repo.
+++++
+++++---
+++++
+++++## 7. Model Download & Inference
+++++
+++++### 7.1 Download
+++++
+++++Because `huggingface-cli` is deprecated on this host, use `python -c` with `snapshot_download`:
+++++
+++++```cmd
+++++.venv\Scripts\python.exe -c "from huggingface_hub import snapshot_download; snapshot_download('HarmenWessels/gemma-4-12B-it-qat-int4-ov', local_dir=r'C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov')"
+++++```
+++++
+++++Install `huggingface_hub` in the `.venv` first if needed.
+++++
+++++### 7.2 Text-only inference test
+++++
+++++```python
+++++import openvino_genai as ov_genai
+++++
+++++model_dir = r"C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov"
+++++pipe = ov_genai.VLMPipeline(model_dir, "GPU")
+++++result = pipe.generate(
+++++    "Who is the president of the United States?",
+++++    max_new_tokens=128
+++++)
+++++print(result)
+++++```
+++++
+++++### 7.3 Image + text inference test (secondary)
+++++
+++++```python
+++++import openvino as ov
+++++from PIL import Image
+++++import numpy as np
+++++import openvino_genai as ov_genai
+++++
+++++model_dir = r"C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov"
+++++pipe = ov_genai.VLMPipeline(model_dir, "GPU")
+++++
+++++img = Image.open(r"C:\path\to\image.jpg").convert("RGB")
+++++images = [ov.Tensor(np.array(img)[None])]  # NHWC
+++++result = pipe.generate(
+++++    "What is in this image? <ov_genai_image_0>",
+++++    images=images,
+++++    max_new_tokens=128
+++++)
+++++print(result)
+++++```
+++++
+++++> **GPU memory note:** The 26B model was ~14.3 GB on disk and OOM'd on Iris Xe. The 12B INT4 QAT model is ~6–7 GB on disk and fits comfortably. First compilation may take several minutes; enable OpenVINO cache (`OPENVINO_CACHE_DIR`) to speed subsequent runs.
+++++
+++++---
+++++
+++++## 8. Known Risks & Mitigations
+++++
+++++| Risk | Likelihood | Mitigation |
+++++|------|------------|------------|
+++++| GPU OOM during first compilation / inference | Medium | Report exact error; do not silently fall back per user directive. |
+++++| Python 3.14 package incompatibilities | Low-Medium | Use only the venv; build pybind11 from OpenVINO's bundled submodule. |
+++++| Build times several hours on i7-1260P | High | Expect 30–120 minutes per repo; run with `--parallel`. |
+++++| Outdated Intel GPU driver crashes | Medium | Verify / update driver before GPU inference. |
+++++| Level Zero runtime not found | Low-Medium | Verified `ze_loader.dll` exists; fallback to OCL if needed. |
+++++| oneDNN GPU build fails with MSVC | Low | Use Release + Ninja; keep frontends disabled. |
+++++| Network/bandwidth for 14.3 GB model | High | Use HuggingFace CLI with resume capability. |
+++++
+++++---
+++++
+++++## 9. Success Criteria
+++++
+++++From the interview, the minimum success is:
+++++
+++++1. All three packages build successfully.
+++++2. `openvino` Python wheel installs into the `.venv`.
+++++3. The `VLMPipeline` loads the model on **GPU**.
+++++4. Text generation produces coherent output.
+++++
+++++Image input is a stretch goal (secondary). CPU-only fallback is an explicit **non-goal** for this spec; if GPU fails, the executor reports the exact error and stops.
+++++
+++++---
+++++
+++++## 10. Resolved Decisions
+++++
+++++| # | Decision | Resolution |
+++++|---|----------|------------|
+++++| 1 | Repo existence | ✅ Verified — `openvino_tokenizers` and `openvino.genai` exist at sibling paths. |
+++++| 2 | Submodule state | ✅ Verified — openvino submodules initialized, on `master`. |
+++++| 3 | GPU runtime | ✅ Resolved to `GPU_RT_TYPE=ZE`; `ze_loader.dll` verified present. OCL is documented fallback. |
+++++| 4 | Python dev libs | ✅ Verified — `C:\Python314\include\Python.h` exists; `python3.lib` / `python314.lib` present in `C:\Python314\libs`. |
+++++| 5 | HETERO | ✅ Keep enabled; GPU-only is the first target, HETERO is for future CPU/GPU split experiments. |
+++++| 6 | Build output | ✅ Keep each repo's build artifacts in its own `build/` directory. Standard OpenVINO convention; makes `find_package(OpenVINO)` work naturally for `openvino.genai`. |
+++++| 7 | Model cache | ✅ Set `OPENVINO_CACHE_DIR` to `C:\Users\mohds\Documents\GitHub\openvino-artifacts\cache\ov_gpu_cache`. |
+++++
+++++---
+++++
+++++## 11. Execution Results
+++++
+++++| Step | Status | Result |
+++++|------|--------|--------|
+++++| 1. Create `openvino-artifacts/` and `AGENTS.md` | ✅ Done | Folder created at `C:\Users\mohds\Documents\GitHub\openvino-artifacts` |
+++++| 2. Activate `.venv` and install base deps | ✅ Done | `.venv` active; `pip`, `setuptools`, `wheel`, `huggingface_hub` installed |
+++++| 3. Build & install `openvino` core wheel | ✅ Done | `openvino-2026.4.0-22498-cp314-cp314-win_amd64.whl` installed |
+++++| 4. Build & install `openvino_tokenizers` | ✅ Done | `openvino_tokenizers-2026.4.0.0-1-8cfe3eb80f9` installed |
+++++| 5. Build & install `openvino.genai` | ✅ Done | `openvino_genai-2026.4.0.0-1-790abd40056` installed |
+++++| 6. Download Gemma-4-26B-A4B-IT INT4 model | 🔄 Next | Run `huggingface-cli download` to `openvino-artifacts/models/...` |
+++++| 7. Run text-only GPU inference | ⏳ Pending | After model download completes |
+++++| 8. Report success or exact failure | ⏳ Pending | After inference test |
+++++
+++++## 12. Execution Plan (remaining steps)
+++++
+++++1. **Benchmark** the Gemma-4-12B-IT INT4 QAT model on GPU and CPU using `openvino-artifacts/scripts/benchmark.py`.
+++++2. **Record** TTFT, TPOT, throughput, and total generate time for each device.
+++++3. **Report** the objective CPU vs GPU comparison.
+++++
+++++---
+++++
+++++### Build/install commands summary (copy-paste ready)
+++++
+++++For each repo, the working incantation was the same: `pip install --no-build-isolation --no-deps .` with the openvino `.venv` activated and `vcvars64.bat` sourced. This avoids PyPI dependency checks and keeps the MSVC environment intact.
+++++
+++++| Repo | Key install command | Why it worked |
+++++|------|---------------------|---------------|
+++++| `openvino` | `pip install build\wheels\openvino-*.whl` | Wheel produced by `-DENABLE_WHEEL=ON` |
+++++| `openvino_tokenizers` | `pip install --no-build-isolation --no-deps .` | Bypasses PyPI `openvino~=2026.4.0.dev` requirement |
+++++| `openvino.genai` | `pip install --no-build-isolation --no-deps .` | Same trick; also requires `py-build-cmake==0.5.0` and `OpenVINO_DIR` |
+++++
+++++## 13. Architecture Overview
+++++
+++++```
+++++openvino (runtime, master)    ← build from source
+++++    ↑ depends on
+++++openvino.genai (master)       ← build from source
+++++    ↑ depends on
+++++openvino_tokenizers           ← build from source
+++++    ↑
+++++ov::genai::VLMPipeline
+++++    ↑ consumes
+++++HarmenWessels/gemma-4-12B-it-qat-int4-ov (HF)
+++++    ├── openvino_language_model.xml/.bin          INT4 QAT   ~6–7 GB
+++++    ├── openvino_text_embeddings_model.xml/.bin     INT8       ~0.5 GB
+++++    ├── openvino_vision_embeddings_model.xml/.bin   INT8       ~0.5 GB
+++++    ├── openvino_tokenizer.xml/.bin
+++++    ├── openvino_detokenizer.xml/.bin
+++++    └── config.json  (model_type: "gemma4_unified")
+++++```
+++++
+++++### What the prebuilt pipeline engine (`openvino.pipeline`) adds
+++++
+++++The public repos build only the GenAI-native `VLMPipeline`. The proprietary Intel prebuilt pipeline engine adds:
+++++
+++++- **Audio input** (`openvino_audio_embeddings_model`) — not in genai-native.
+++++- **Safetensors → IR on-the-fly** — loads raw HF weights directly.
+++++- **YAML-driven modular pipeline** — per-module device assignment.
+++++
+++++For this project, we use the GenAI-native `VLMPipeline` with the pre-exported IR model.
+++++
+++++---
+++++
+++++## 14. Notes from Interview
+++++
+++++- Server deployment originally attempted with OVMS v2026.2.1; pivoted to FastAPI after OVMS's bundled `openvino_genai` lacked `gemma4_unified` support.
+++++- User confirmed all three repos are cloned locally at default sibling paths.
+++++- GPU runtime changed from **OCL** to **ZE** after verifying `ze_loader.dll` is present on this Iris Xe iGPU; OCL remains a documented fallback.
+++++- User wants a **step-by-step plan detailed enough for the assistant to execute**.
+++++- User selected "execute as we go, spec is a checkpoint".
+++++- User wants prerequisites verified before any build commands run.
+++++- User wants a new sibling folder for artifacts/model cache with an `AGENTS.md` file.
+++++- User wants `ENABLE_WHEEL=ON` included because the docs require it for wheel generation.
+++++- User noted Python 3.14 is stable; the build should proceed with Python 3.14.
+++++
+++++---
+++++
+++++## 15. CPU vs GPU Benchmark Results
+++++
+++++Benchmark script: `openvino-artifacts/scripts/benchmark.py`
+++++Prompt: `"Who is the president of the United States?"`
+++++`max_new_tokens`: `128`
+++++Measured iterations: `3`
+++++Warmup iterations: `1`
+++++
+++++### Benchmark command
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino
+++++.venv\Scripts\activate.bat
+++++
+++++:: GPU
+++++.venv\Scripts\python.exe openvino-artifacts\scripts\benchmark.py --device GPU --num_iter 3 --max_new_tokens 128
+++++
+++++:: CPU
+++++.venv\Scripts\python.exe openvino-artifacts\scripts\benchmark.py --device CPU --num_iter 3 --max_new_tokens 128
+++++```
+++++
+++++### Results
+++++
+++++| Metric | GPU | CPU |
+++++|--------|-----|-----|
+++++| Load time (first compile) | 56,551 ms | 58,082 ms |
+++++| TTFT (ms) | 2,030 ± 224 | 3,036 ± 627 |
+++++| TPOT (ms/token) | 587.98 ± 470.89 | 647.38 ± 164.19 |
+++++| Throughput (tokens/s) | **1.70 ± 1.36** | **1.54 ± 0.39** |
+++++| Generate duration (ms) | **11,441 ± 3,202** | **17,927 ± 3,514** |
+++++
+++++### Interpretation
+++++
+++++- **GPU wins overall:** Iris Xe is about **10% faster in throughput** and completes generation in roughly **two-thirds the CPU time**.
+++++- The absolute speed is modest (~1.7 tokens/s) because a 12B model is still very large for an integrated GPU with shared memory.
+++++- Load times are dominated by first-time graph compilation (cache was cold for each device). Subsequent runs will reuse cached kernels.
+++++- Both CPU and GPU produce coherent answers.
+++++
+++++### OpenVINO GenAI PerfMetrics reference
+++++
+++++The benchmark uses the built-in `PerfMetrics` API:
+++++
+++++- `perf_metrics.get_ttft()` — Time To First Token (ms)
+++++- `perf_metrics.get_tpot()` — Time Per Output Token (ms/token)
+++++- `perf_metrics.get_throughput()` — Tokens per second
+++++- `perf_metrics.get_generate_duration()` — Total generation time (ms)
+++++- `perf_metrics.get_num_generated_tokens()` — Number of tokens actually generated
+++++
+++++These are exposed directly by `ov_genai.VLMPipeline` when `GenerationConfig` is passed to `generate()`.
+++++
+++++### 15.1 Creative-writing benchmark (1024 tokens)
+++++
+++++Prompt: *"Write a mystery-horror short story in the style of Tom Clancy and Stephen King. A man wakes up early in the morning, goes to the bathroom to pee like he always does, but this time nothing comes out. When he looks down, his penis is gone."*
+++++
+++++| Metric | GPU (Iris Xe) | CPU (i7-1260P) |
+++++|--------|---------------|----------------|
+++++| TTFT | 3,599 ms | 50,451 ms |
+++++| TPOT | 354.33 ms/token | 781.15 ms/token |
+++++| Throughput | **2.82 tokens/s** | **1.28 tokens/s** |
+++++| Generate duration | **366,103 ms (~6.1 min)** | **849,580 ms (~14.2 min)** |
+++++| Input tokens | 67 | 67 |
+++++| Generated tokens | 1024 | 1024 |
+++++| Saved story | `openvino-artifacts/outputs/story_gpu.txt` | `openvino-artifacts/outputs/story_cpu.txt` |
+++++
+++++The GPU scaled much better for long-form generation, completing the story in roughly half the CPU time with a significantly lower TTFT. The CPU run showed much higher first-token latency, likely due to CPU graph optimization and memory layout differences.
+++++
+++++### 15.2 Scaling benchmark (double until story finishes or OOM)
+++++
+++++Script: `openvino-artifacts/scripts/benchmark_scaling.py`
+++++
+++++The script starts at a configurable `max_new_tokens` (default 4096), generates a story, and checks whether the text ends with a sentence terminator. If the story is unfinished, it doubles `max_new_tokens` and retries. It stops on OOM or when the story finishes.
+++++
+++++#### GPU scaling results
+++++
+++++| Step | Max tokens | Status | Generated tokens | Load (ms) | Generate (ms) | TTFT (ms) | TPOT (ms/t) | Throughput (tok/s) |
+++++|------|------------|--------|------------------|-----------|---------------|-----------|-------------|--------------------|
+++++| 1 | 4096 | Unfinished | 4096 | 46349.61 | 1,685,844.38 | 5213.23 | 410.37 | 2.44 |
+++++| 2 | 8192 | Finished | 1144 | 50118.76 | 376,997.88 | 3383.89 | 326.85 | 3.06 |
+++++
+++++- The 4096-token story ended mid-sentence (`...over a hundred beats per...`).
+++++- At 8192 tokens the model hit EOS after 1144 tokens and produced a complete ending.
+++++- No OOM was encountered on the Iris Xe iGPU at either limit.
+++++- Saved files:
+++++  - `openvino-artifacts/outputs/story_gpu_4096.txt`
+++++  - `openvino-artifacts/outputs/story_gpu_8192.txt`
+++++
+++++#### CPU scaling results
+++++
+++++| Step | Max tokens | Status | Generated tokens | Load (ms) | Generate (ms) | TTFT (ms) | TPOT (ms/t) | Throughput (tok/s) |
+++++|------|------------|--------|------------------|-----------|---------------|-----------|-------------|--------------------|
+++++| 1 | 4096 | Finished | 1254 | 14948.45 | 1,032,538.31 | 78869.59 | 761.10 | 1.31 |
+++++
+++++- The CPU finished the story within the 4096-token limit after 1254 tokens.
+++++- No OOM was encountered.
+++++- Saved file:
+++++  - `openvino-artifacts/outputs/story_cpu_4096.txt`
+++++
+++++#### Key observations
+++++
+++++- **GPU is 2.3× faster for sustained generation**: 3.06 tok/s (GPU) vs 1.31 tok/s (CPU) on the long-form task.
+++++- **GPU TTFT is 23× lower**: 3.38 s vs 78.87 s.
+++++- **CPU generated more tokens to finish**: 1254 (CPU) vs 1144 (GPU), likely due to sampling/EOS non-determinism.
+++++- **No OOM** occurred on either device up to 8192 tokens / ~1250 generated tokens.
+++++- The Iris Xe iGPU can sustain long-form 12B INT4 generation without running out of memory, though throughput is modest.
+++++
+++++---
+++++
+++++## 16. OpenAI-Compatible Server Deployment
+++++
+++++OVMS v2026.2.1 could not serve the model because its bundled `openvino_genai` predates `gemma4_unified` support. Instead, a minimal **FastAPI** server wraps the working `openvino_genai.VLMPipeline` and exposes the same OpenAI-compatible endpoints.
+++++
+++++All server files live in the sibling artifacts folder:
+++++
+++++```text
+++++C:\Users\mohds\Documents\GitHub\openvino-artifacts\
+++++├── scripts\server.py                # FastAPI entry point
+++++├── scripts\test_openai_client.py    # Python client test
+++++└── logs\server.log                   # Runtime log (created on startup)
+++++```
+++++
+++++### 16.1 Files created
+++++
+++++| File | Purpose |
+++++|------|---------|
+++++| `C:\Users\mohds\Documents\GitHub\openvino-artifacts\scripts\server.py` | FastAPI server around `VLMPipeline` |
+++++| `C:\Users\mohds\Documents\GitHub\openvino-artifacts\scripts\test_openai_client.py` | Python OpenAI client test |
+++++| `C:\Users\mohds\Documents\GitHub\openvino-artifacts\logs\server.log` | Runtime log (created on startup) |
+++++
+++++### 16.2 Install server dependencies
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino
+++++.venv\Scripts\pip install fastapi uvicorn openai
+++++```
+++++
+++++> Versions used when tested: latest `fastapi`, `uvicorn`, and `openai` packages from PyPI as of 2026-07-22.
+++++
+++++### 16.3 Start the server
+++++
+++++```cmd
+++++.venv\Scripts\python openvino-artifacts\scripts\server.py
+++++```
+++++
+++++The server prints:
+++++
+++++```text
+++++Loading VLMPipeline from C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov on GPU...
+++++Pipeline loaded.
+++++
+++++Server starting at http://0.0.0.0:8000
+++++OpenAI-compatible endpoint: POST /v3/chat/completions
+++++Model: gemma | Device: GPU
+++++```
+++++
+++++### 16.4 Test with curl
+++++
+++++```cmd
+++++curl -X POST http://localhost:8000/v3/chat/completions -H "Content-Type: application/json" -d "{\"model\": \"gemma\", \"messages\": [{\"role\": \"user\", \"content\": \"Who is the president of Malaysia?\"}], \"max_tokens\": 128}"
+++++```
+++++
+++++### 16.5 Test with Python OpenAI client
+++++
+++++```python
+++++from openai import OpenAI
+++++
+++++# Timeout is set on the client constructor so it covers both the HTTP
+++++# connection setup and the generation request itself.
+++++client = OpenAI(
+++++    base_url="http://localhost:8000/v3",
+++++    api_key="unused",
+++++    timeout=60.0,
+++++)
+++++
+++++response = client.chat.completions.create(
+++++    model="gemma",
+++++    messages=[{"role": "user", "content": "Who is the president of Malaysia?"}],
+++++    max_tokens=128,
+++++)
+++++
+++++print(response.choices[0].message.content)
+++++```
+++++
+++++Run the included test script from the openvino repo root:
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino
+++++.venv\Scripts\python.exe openvino-artifacts\scripts\test_openai_client.py
+++++```
+++++
+++++### 16.6 Server test results
+++++
+++++| Test | Status | Response summary |
+++++|------|--------|------------------|
+++++| curl `/v3/chat/completions` | ✅ Pass | Corrected the premise: Malaysia has no president; identified the Yang di-Pertuan Agong and Prime Minister Anwar Ibrahim |
+++++| Python OpenAI client | ✅ Pass | Same correct answer |
+++++| `/v1/config` (OVMS-style health/config) | ✅ Pass | `{"gemma": {"model_version_status": [{"version": "1", "state": "AVAILABLE"}]}}` |
+++++
+++++### 16.7 Why `/v3`?
+++++
+++++OVMS's LLM/VLM endpoint is exposed at `/v3/chat/completions`. Using the same path keeps the server compatible with tools and clients configured for OVMS.
+++++
+++++### 16.8 Architecture
+++++
+++++```text
+++++Client (curl / OpenAI SDK)
+++++        |
+++++        POST /v3/chat/completions
+++++        |
+++++   openvino-artifacts/scripts/server.py  (FastAPI)
+++++        |
+++++        apply_chat_template() → VLMPipeline.generate()
+++++        |
+++++   openvino_genai 2026.4.0  ← built from source
+++++        |
+++++   Intel Iris Xe iGPU
+++++```
++++diff --git a/docs/specs/ovms-gemma4-irisxe-spec.md b/docs/specs/ovms-gemma4-irisxe-spec.md
++++new file mode 100644
++++index 00000000..bff24466
++++--- /dev/null
+++++++ b/docs/specs/ovms-gemma4-irisxe-spec.md
++++@@ -0,0 +1,256 @@
+++++# OpenVINO Model Server: Serve Gemma-4-12B-IT on Intel Iris Xe iGPU — Spec
+++++
+++++**Short name:** `ovms-gemma4-irisxe`  
+++++**Date:** 2026-07-22  
+++++**Status:**  ❌ Superseded — OVMS v2026.2.1 does not support `gemma4_unified`; replaced by a FastAPI server wrapping `openvino_genai.VLMPipeline`.  
+++++**Author:** Buffy (assistant)  
+++++**Host:** Windows 11, Intel Core i7-1260P, Intel Iris Xe iGPU, 32 GB RAM  
+++++**Model:** `HarmenWessels/gemma-4-12B-it-qat-int4-ov` (already exported OpenVINO IR, ~6–7 GB)  
+++++**Artifact folder:** `C:\Users\mohds\Documents\GitHub\openvino-artifacts` (sibling to openvino repo)  
+++++
+++++---
+++++
+++++## 1. Goal
+++++
+++++Run the Gemma-4-12B-IT INT4 QAT model through **OpenVINO Model Server (OVMS)** on the local Windows 11 machine, using the **Intel Iris Xe iGPU** for inference. Expose the model via the **OpenAI-compatible API endpoint** and test it with both `curl` and the Python `openai` client.
+++++
+++++The test prompt is:
+++++
+++++> **"Who is the president of Malaysia?"**
+++++
+++++---
+++++
+++++## 2. Why OVMS?
+++++
+++++So far the model was called directly from `openvino_genai.VLMPipeline`. Moving to OVMS turns the model into a network service that other tools can call via the OpenAI API. This is a stepping stone toward integration with chat UIs, multi-client apps, and production deployments.
+++++
+++++**However, this path was abandoned.** See section 11.
+++++
+++++---
+++++
+++++## 3. Prerequisites
+++++
+++++| Item | Status | Details |
+++++|------|--------|---------|
+++++| OpenVINO core + GenAI built from source | ✅ Done | `openvino` 2026.4.0, `openvino_genai` 2026.4.0.0 |
+++++| Model IR downloaded | ✅ Done | `openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov` |
+++++| GPU runtime | ✅ Done | Level Zero (`GPU_RT_TYPE=ZE`) working on Iris Xe |
+++++| Microsoft Visual C++ Redistributable | ✅ Likely present | Already required by the OpenVINO build; verify if OVMS fails to start |
+++++| OVMS Windows binary | ⏳ Pending | Download `ovms_windows_python_on.zip` or `ovms_windows_python_off.zip` |
+++++| OpenAI Python client | ⏳ Pending | `pip install openai` into the `.venv` |
+++++
+++++---
+++++
+++++## 4. OVMS Installation on Windows (Bare Metal)
+++++
+++++### 4.1 Download
+++++
+++++Download the latest OVMS Windows release from the GitHub releases page:
+++++
+++++```text
+++++https://github.com/openvinotoolkit/model_server/releases
+++++```
+++++
+++++Recommended archive:
+++++
+++++- `ovms_windows_python_on.zip` — includes Python support (useful for GenAI chat templates).
+++++- `ovms_windows_python_off.zip` — smaller C++-only build.
+++++
+++++Extract to a dedicated folder, e.g.:
+++++
+++++```text
+++++C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+++++```
+++++
+++++### 4.2 Initialize environment
+++++
+++++In every new shell that runs OVMS:
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+++++setupvars.bat
+++++```
+++++
+++++This sets the required `PATH` and other environment variables.
+++++
+++++### 4.3 Verify binary
+++++
+++++```cmd
+++++ovms.exe --version
+++++```
+++++
+++++Expected: version string printed.
+++++
+++++---
+++++
+++++## 5. Model Preparation
+++++
+++++### 5.1 Current model layout
+++++
+++++```textnopenvino-artifacts/models/gemma-4-12B-it-qat-int4-ov/
+++++├── openvino_language_model.xml / .bin
+++++├── openvino_text_embeddings_model.xml / .bin
+++++├── openvino_vision_embeddings_model.xml / .bin
+++++├── openvino_tokenizer.xml / .bin
+++++├── openvino_detokenizer.xml / .bin
+++++├── config.json
+++++├── generation_config.json
+++++├── tokenizer.json
+++++├── tokenizer_config.json
+++++├── preprocessor_config.json
+++++├── processor_config.json
+++++├── chat_template.jinja
+++++└── README.md
+++++```
+++++
+++++### 5.2 OVMS model repository layout
+++++
+++++OVMS expects a versioned model repository. For GenAI/LLM models, point OVMS to the directory containing the model files (IR + config). We will try the simplest layout first:
+++++
+++++```text
+++++openvino-artifacts/models/
+++++└── gemma
+++++    └── 1
+++++        └── <symlink or copy of gemma-4-12B-it-qat-int4-ov contents>
+++++```
+++++
+++++Or use `--model_path` directly to the existing model directory.
+++++
+++++### 5.3 Configuration file (config.json for OVMS)
+++++
+++++OVMS can be started with a server-side `config.json`. For GenAI models, use the `model_config_list` form:
+++++
+++++```json
+++++{
+++++  "model_config_list": [
+++++    {
+++++      "config": {
+++++        "name": "gemma",
+++++        "base_path": "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
+++++        "target_device": "GPU",
+++++        "model_settings": {
+++++          "node_type": "ov_genai",
+++++          "model_id": "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
+++++          "device": "GPU"
+++++        }
+++++      }
+++++    }
+++++  ]
+++++}
+++++```
+++++
+++++> **Note:** Exact schema may need adjustment once the OVMS binary is available and tested.
+++++
+++++---
+++++
+++++## 6. Start the Server
+++++
+++++### 6.1 Option A: Direct CLI
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+++++setupvars.bat
+++++
+++++ovms.exe --model_name gemma --model_path C:\Users\mohds\Documents\GitHub\openvino-artifacts\models\gemma-4-12B-it-qat-int4-ov --port 8000 --target_device GPU
+++++```
+++++
+++++### 6.2 Option B: Config file
+++++
+++++```cmd
+++++cd /d C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms
+++++setupvars.bat
+++++
+++++ovms.exe --config_path C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms_config.json --port 8000
+++++```
+++++
+++++---
+++++
+++++## 7. Test the OpenAI-Compatible Endpoint
+++++
+++++### 7.1 curl test
+++++
+++++```cmd
+++++curl -X POST http://localhost:8000/v1/chat/completions ^
+++++  -H "Content-Type: application/json" ^
+++++  -d "{\"model\": \"gemma\", \"messages\": [{\"role\": \"user\", \"content\": \"Who is the president of Malaysia?\"}], \"max_tokens\": 128}"
+++++```
+++++
+++++### 7.2 Python client test
+++++
+++++```python
+++++from openai import OpenAI
+++++
+++++client = OpenAI(base_url="http://localhost:8000/v1", api_key="not-needed")
+++++
+++++response = client.chat.completions.create(
+++++    model="gemma",
+++++    messages=[{"role": "user", "content": "Who is the president of Malaysia?"}],
+++++    max_tokens=128,
+++++)
+++++print(response.choices[0].message.content)
+++++```
+++++
+++++---
+++++
+++++## 8. Expected Results
+++++
+++++- Server starts without errors.
+++++- GPU is used (`target_device GPU` is honored).
+++++- curl returns a JSON response containing a coherent answer.
+++++- Python client returns the same coherent answer.
+++++
+++++---
+++++
+++++## 9. Known Risks & Mitigations
+++++
+++++| Risk | Likelihood | Mitigation |
+++++|------|------------|------------|
+++++| OVMS Windows GPU support is experimental | Medium | Fall back to CPU only if GPU fails; document exact error |
+++++| Model needs a `graph.pbtxt` for GenAI engine | Medium | Generate one with OpenVINO export tools or use `--task text_generation` / `--task VLM` |
+++++| OpenAI endpoint may differ from `/v1/chat/completions` | Low | Check OVMS docs; use `/v2/models/gemma/generate` as fallback |
+++++| Long model load / compilation on first start | High | Enable OpenVINO cache via `OPENVINO_CACHE_DIR` |
+++++| Port 8000 already in use | Low | Use `--port 8001` or another free port |
+++++
+++++---
+++++
+++++## 10. Success Criteria (Not achieved — see Section 11)
+++++
+++++These criteria were the original goals. The deployment was abandoned after OVMS v2026.2.1 failed to load the model (see Section 11.2). The equivalent functionality was delivered via the FastAPI server documented in `openvino-genai-irisxe-gemma4-spec.md` Section 15.
+++++
+++++1. ~~OVMS binary downloads and runs on Windows 11.~~
+++++2. ~~Model loads on **GPU** (or CPU if GPU is unsupported by OVMS on Windows).~~
+++++3. ~~`curl` to `/v1/chat/completions` returns a response.~~
+++++4. ~~Python `openai` client returns a response.~~
+++++5. ~~Both responses answer the prompt coherently.~~
+++++
+++++---
+++++
+++++## 11. What Actually Happened (Post-Mortem)
+++++
+++++### 11.1 OVMS startup failed
+++++
+++++The OVMS Windows binary (v2026.2.1) was extracted to:
+++++
+++++```text
+++++C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms\ovms
+++++```
+++++
+++++After setting `vcvars64.bat`, running `setupvars.bat`, and launching with `--task text_generation`, the server failed with:
+++++
+++++```text
+++++Unsupported 'gemma4_unified' VLM model type
+++++```
+++++
+++++### 11.2 Root cause
+++++
+++++OVMS v2026.2.1 ships its own `openvino_genai.dll` (2026.2.x era). It predates the `gemma4_unified` model type, which was added in the 2026.4.0 cycle that we built from source. The model's `config.json` declares `"model_type": "gemma4_unified"`, so the bundled OVMS engine cannot initialize the pipeline.
+++++
+++++### 11.3 Workaround considered
+++++
+++++Build OVMS from source against our locally built `openvino_genai`. This is technically possible but requires Bazel + patching the build scripts for VS2026, and a multi-hour build. It was deemed overkill for a local demo.
+++++
+++++### 11.4 Replacement solution
+++++
+++++A minimal **FastAPI server** was written to wrap the existing `openvino_genai.VLMPipeline` (the one that already works on GPU). It exposes the same `/v3/chat/completions` OpenAI-compatible endpoint that OVMS would have, but uses our 2026.4.0 genai build instead of the older OVMS-bundled one.
+++++
+++++See the main project spec `openvino-genai-irisxe-gemma4-spec.md` for the server implementation, test commands, and results.
++++diff --git a/model_server.code-workspace b/model_server.code-workspace
++++new file mode 100644
++++index 00000000..f4b1683b
++++--- /dev/null
+++++++ b/model_server.code-workspace
++++@@ -0,0 +1,25 @@
+++++{
+++++	"folders": [
+++++		{
+++++			"name": "model_server",
+++++			"path": "."
+++++		},
+++++		{
+++++			"name": "openvino",
+++++			"path": "../openvino"
+++++		},
+++++		{
+++++			"name": "openvino.genai",
+++++			"path": "../openvino.genai"
+++++		},
+++++		{
+++++			"name": "openvino_tokenizers",
+++++			"path": "../openvino_tokenizers"
+++++		},
+++++		{
+++++			"name": "openvino-artifacts",
+++++			"path": "../openvino-artifacts"
+++++		}
+++++	],
+++++	"settings": {}
+++++}
+ ++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ ++new file mode 100644
+-++index 00000000..31b94524
++++index 00000000..e8a3b7e0
+ ++--- /dev/null
+ +++++ b/win2026_genai_build.patch
+-++@@ -0,0 +1,4757 @@
++++@@ -0,0 +1,5370 @@
+ +++From 736d11613454ee328869d9fb943f3d17f5e636cd Mon Sep 17 00:00:00 2001
+ +++From: hsm207 <hsm207@users.noreply.github.com>
+ +++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -4034,7 +4912,7 @@ index 00000000..78bf8a67
+ +++2.50.1.windows.1
+ +++
+ +++
+-+++From aa3a9e518917805fc422cddbf17833221220239a Mon Sep 17 00:00:00 2001
+++++From 2ef6929f7588be8b43ca6428f19373c956d0f6ff Mon Sep 17 00:00:00 2001
+ +++From: hsm207 <hsm207@users.noreply.github.com>
+ +++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ +++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+@@ -4042,8 +4920,8 @@ index 00000000..78bf8a67
+ +++
+ +++---
+ +++ WIN2026_BUILD_GUIDE.md    |  311 +++
+-+++ win2026_genai_build.patch | 4144 +++++++++++++++++++++++++++++++++++++
+-+++ 2 files changed, 4455 insertions(+)
+++++ win2026_genai_build.patch | 4757 +++++++++++++++++++++++++++++++++++++
+++++ 2 files changed, 5068 insertions(+)
+ +++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ +++ create mode 100644 win2026_genai_build.patch
+ +++
+@@ -4366,11 +5244,11 @@ index 00000000..78bf8a67
+ ++++
+ +++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ +++new file mode 100644
+-+++index 00000000..f35fd388
+++++index 00000000..31b94524
+ +++--- /dev/null
+ ++++++ b/win2026_genai_build.patch
+-+++@@ -0,0 +1,4144 @@
+-++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+++++@@ -0,0 +1,4757 @@
++++++From 736d11613454ee328869d9fb943f3d17f5e636cd Mon Sep 17 00:00:00 2001
+ ++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+ ++++Subject: [PATCH 1/4] build(windows): update build scripts and warning flags
+@@ -4399,7 +5277,7 @@ index 00000000..78bf8a67
+ ++++ build:windows --host_copt=/external:anglebrackets
+ ++++ build:windows --copt=/external:W0
+ ++++diff --git a/windows_build.bat b/windows_build.bat
+-++++index 4c3f1000..c39b419e 100644
++++++index ab32a688..19661108 100644
+ ++++--- a/windows_build.bat
+ +++++++ b/windows_build.bat
+ ++++@@ -69,7 +69,7 @@ for /f "usebackq eol=# tokens=1,3" %%A in ("%cd%\versions.mk") do (
+@@ -4516,7 +5394,7 @@ index 00000000..78bf8a67
+ ++++2.50.1.windows.1
+ ++++
+ ++++
+-++++From c37c9e2399005c5d1d6c0d9bb7b61e0a920f576f Mon Sep 17 00:00:00 2001
++++++From fc276b44e58495ca833cef93376ecfad6abbbf1d Mon Sep 17 00:00:00 2001
+ ++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++Date: Fri, 24 Jul 2026 04:37:39 +0200
+ ++++Subject: [PATCH 2/4] build(bazel): update genai_windows.BUILD globs and
+@@ -4566,7 +5444,7 @@ index 00000000..78bf8a67
+ ++++2.50.1.windows.1
+ ++++
+ ++++
+-++++From 59c5d73e38f02424ae215576d94d7825c60e9966 Mon Sep 17 00:00:00 2001
++++++From a5211035ba396a390d6a57cb32320aff9f7289e6 Mon Sep 17 00:00:00 2001
+ ++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++Date: Fri, 24 Jul 2026 04:37:43 +0200
+ ++++Subject: [PATCH 3/4] build(deps): wire //third_party:genai dependencies into
+@@ -4580,7 +5458,7 @@ index 00000000..78bf8a67
+ ++++ 4 files changed, 6 insertions(+), 4 deletions(-)
+ ++++
+ ++++diff --git a/src/BUILD b/src/BUILD
+-++++index 0abf61f1..ab066c6f 100644
++++++index b0365a1a..a6dfc6fa 100644
+ ++++--- a/src/BUILD
+ +++++++ b/src/BUILD
+ ++++@@ -315,10 +315,8 @@ ovms_cc_library(
+@@ -4617,7 +5495,7 @@ index 00000000..78bf8a67
+ ++++         "//src:httppayload",
+ ++++         "//src:libovmslogging",
+ ++++diff --git a/src/embeddings/BUILD b/src/embeddings/BUILD
+-++++index 8b77f4f1..4fd3887f 100644
++++++index 6592228b..b07370e6 100644
+ ++++--- a/src/embeddings/BUILD
+ +++++++ b/src/embeddings/BUILD
+ ++++@@ -39,6 +39,7 @@ ovms_cc_library(
+@@ -4644,28 +5522,31 @@ index 00000000..78bf8a67
+ ++++2.50.1.windows.1
+ ++++
+ ++++
+-++++From 57982b592794aa5ab044af803cb6faf792157872 Mon Sep 17 00:00:00 2001
++++++From aa3a9e518917805fc422cddbf17833221220239a Mon Sep 17 00:00:00 2001
+ ++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ ++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ++++ file
+ ++++
+ ++++---
+-++++ WIN2026_BUILD_GUIDE.md    |  303 ++++
+-++++ win2026_genai_build.patch | 3539 +++++++++++++++++++++++++++++++++++++
+-++++ 2 files changed, 3842 insertions(+)
++++++ WIN2026_BUILD_GUIDE.md    |  311 +++
++++++ win2026_genai_build.patch | 4144 +++++++++++++++++++++++++++++++++++++
++++++ 2 files changed, 4455 insertions(+)
+ ++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ ++++ create mode 100644 win2026_genai_build.patch
+ ++++
+ ++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ ++++new file mode 100644
+-++++index 00000000..203e18f1
++++++index 00000000..97c07689
+ ++++--- /dev/null
+ +++++++ b/WIN2026_BUILD_GUIDE.md
+-++++@@ -0,0 +1,303 @@
++++++@@ -0,0 +1,311 @@
+ +++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ +++++
+-+++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries.
+++++++
+++++++> **Why This Custom Build is Required:**  
+++++++> Standard upstream prebuilt OVMS binaries support standard LLMs, BUT the **Gemma 4 12B model** (`HarmenWessels/gemma-4-12B-it-qat-int4-ov`) uses the new **`gemma4_unified` multi-modal architecture** (which integrates unified text, vision, and text-embedding sub-pipelines). Building OVMS natively against OpenVINO GenAI 2026.4.0.0 unlocks native C++ auto-detection and execution for `gemma4` tool/reasoning parsers (`gemma4_unified`) on GPU and CPU.
+ +++++
+ +++++---
+ +++++
+@@ -4729,12 +5610,15 @@ index 00000000..78bf8a67
+ +++++
+ +++++## 3. Building and Packaging OVMS
+ +++++
+++++++> ⚠️ **CRITICAL PREREQUISITE - ADMINISTRATOR PRIVILEGES:**  
+++++++> You **MUST** run all build commands inside an **Administrator Command Prompt (`cmd.exe`)** (or an elevated shell with Windows Developer Mode symlinks enabled). Bazel creates symbolic links and directory junctions during MSVC compilation; running without Administrator privileges will cause Bazel to throw `Access Denied` or `Symlink creation failed` compilation errors.
+++++++
+ +++++### Step 1: Clean Build Output Root (Optional if clearing Bazel cache)
+ +++++```cmd
+ +++++windows_clean_build.bat opt 1
+ +++++```
+ +++++
+-+++++### Step 2: Build OVMS Binary
+++++++### Step 2: Build OVMS Binary (in Administrator cmd.exe)
+ +++++```cmd
+ +++++windows_build.bat opt --with_python
+ +++++```
+@@ -4746,6 +5630,8 @@ index 00000000..78bf8a67
+ +++++```
+ +++++*Output archive:* `dist\windows\ovms.zip` (Extracted at `dist\windows\ovms\`)
+ +++++
+++++++*(For general baremetal deployment, extraction, and Windows Service installation instructions, see [docs/deploying_server_baremetal.md](docs/deploying_server_baremetal.md).)*
+++++++
+ +++++---
+ +++++
+ +++++## 4. Serving & Running VLM Models on GPU
+@@ -4968,10 +5854,10 @@ index 00000000..78bf8a67
+ +++++
+ ++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ ++++new file mode 100644
+-++++index 00000000..d45052d4
++++++index 00000000..f35fd388
+ ++++--- /dev/null
+ +++++++ b/win2026_genai_build.patch
+-++++@@ -0,0 +1,3539 @@
++++++@@ -0,0 +1,4144 @@
+ +++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ +++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -5246,25 +6132,25 @@ index 00000000..78bf8a67
+ +++++2.50.1.windows.1
+ +++++
+ +++++
+-+++++From 0e72bd95a69771d3dc386279155df28351ee1748 Mon Sep 17 00:00:00 2001
+++++++From 57982b592794aa5ab044af803cb6faf792157872 Mon Sep 17 00:00:00 2001
+ +++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ +++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ +++++ file
+ +++++
+ +++++---
+-+++++ WIN2026_BUILD_GUIDE.md    |  289 ++++
+-+++++ win2026_genai_build.patch | 2948 +++++++++++++++++++++++++++++++++++++
+-+++++ 2 files changed, 3237 insertions(+)
+++++++ WIN2026_BUILD_GUIDE.md    |  303 ++++
+++++++ win2026_genai_build.patch | 3539 +++++++++++++++++++++++++++++++++++++
+++++++ 2 files changed, 3842 insertions(+)
+ +++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ +++++ create mode 100644 win2026_genai_build.patch
+ +++++
+ +++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ +++++new file mode 100644
+-+++++index 00000000..bb18bc72
+++++++index 00000000..203e18f1
+ +++++--- /dev/null
+ ++++++++ b/WIN2026_BUILD_GUIDE.md
+-+++++@@ -0,0 +1,289 @@
+++++++@@ -0,0 +1,303 @@
+ ++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ ++++++
+ ++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -5552,14 +6438,28 @@ index 00000000..78bf8a67
+ ++++++- **2. Strict Header Isolation on Windows:** In our clean build architecture, local GenAI headers are isolated in `genai_hdrs`. If a target omits `"//third_party:genai"`, Bazel refuses to pass `-Igenai_hdrs` to MSVC, immediately triggering `fatal error C1083`.
+ ++++++- **3. Skipped Feature Targets in Upstream Windows CI:** Upstream's minimal Windows CI builds without Python (`--with_python`) and skips compiling MediaPipe + Python feature targets (like `tokenize_parser`, `embeddings_servable`, and `t2s_servable`). Building with `--with_python` (`--config=win_mp_on_py_on`) compiles these targets on Windows for the first time, exposing the missing dependencies.
+ ++++++
++++++++### Q8: Why replace conditional `select(...)` with unconditional `"//third_party:genai"` in `src/BUILD` (`libovms_version_impl`)?
++++++++- **The problem:** `src/version.cpp` unconditionally includes `#include <openvino/genai/version.hpp>` to print the GenAI backend version. Upstream wrapped `"//third_party:genai"` in `select({"//:not_disable_mediapipe": ["//third_party:genai"]})`. On Windows with `--config=win_mp_on_py_on`, `select` evaluated `//conditions:default` (`[]`), stripping GenAI headers and causing `fatal error C1083`.
++++++++- **The fix:** Because `version.cpp` unconditionally requires `version.hpp`, GenAI is an unconditional dependency. Replacing `select(...)` with `"//third_party:genai"` directly in `deps` guarantees Bazel supplies GenAI headers on every Windows configuration.
++++++++
++++++++### Q9: What exact target dependency additions were made in Commit `59c5d73e` and why?
++++++++- **Audit Table:**
++++++++
++++++++| BUILD File | Target Name | Source File | `#include` in Source | Missing Dep Added |
++++++++| :--- | :--- | :--- | :--- | :--- |
++++++++| `src/tokenize/BUILD` | `tokenize_parser` | `tokenize_parser.cpp` | `#include <openvino/genai/tokenizer.hpp>` | `"//third_party:genai"` |
++++++++| `src/embeddings/BUILD` | `embeddings_servable` | `embeddings_servable.cpp` | `#include <openvino/genai/llm_pipeline.hpp>` | `"//third_party:genai"` |
++++++++| `src/audio/text_to_speech/BUILD` | `t2s_servable` & `t2s_calculator` | `t2s_servable.cpp` | `#include <openvino/openvino.hpp>` | `"//third_party:openvino"` |
++++++++
++++++++
+ ++++++
+ ++++++
+ +++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ +++++new file mode 100644
+-+++++index 00000000..fba082ae
+++++++index 00000000..d45052d4
+ +++++--- /dev/null
+ ++++++++ b/win2026_genai_build.patch
+-+++++@@ -0,0 +1,2948 @@
+++++++@@ -0,0 +1,3539 @@
+ ++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ ++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -5834,25 +6734,25 @@ index 00000000..78bf8a67
+ ++++++2.50.1.windows.1
+ ++++++
+ ++++++
+-++++++From 60e738e55f70fb5fd9449f55595b826e231c21a0 Mon Sep 17 00:00:00 2001
++++++++From 0e72bd95a69771d3dc386279155df28351ee1748 Mon Sep 17 00:00:00 2001
+ ++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ ++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ++++++ file
+ ++++++
+ ++++++---
+-++++++ WIN2026_BUILD_GUIDE.md    |  283 +++++
+-++++++ win2026_genai_build.patch | 2363 +++++++++++++++++++++++++++++++++++++
+-++++++ 2 files changed, 2646 insertions(+)
++++++++ WIN2026_BUILD_GUIDE.md    |  289 ++++
++++++++ win2026_genai_build.patch | 2948 +++++++++++++++++++++++++++++++++++++
++++++++ 2 files changed, 3237 insertions(+)
+ ++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ ++++++ create mode 100644 win2026_genai_build.patch
+ ++++++
+ ++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ ++++++new file mode 100644
+-++++++index 00000000..d38f221a
++++++++index 00000000..bb18bc72
+ ++++++--- /dev/null
+ +++++++++ b/WIN2026_BUILD_GUIDE.md
+-++++++@@ -0,0 +1,283 @@
++++++++@@ -0,0 +1,289 @@
+ +++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ +++++++
+ +++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -6135,13 +7035,19 @@ index 00000000..78bf8a67
+ +++++++  - `//`: Root package path of the repository.
+ +++++++  - `:openvino_new_headers`: C++ header target defined in `third_party/openvino/openvino_windows.BUILD` that globs core OpenVINO headers (`include/openvino/**/*.*`).
+ +++++++
+++++++++### Q7: Why do missing `deps` in Bazel BUILD files pass on Upstream Linux CI, but fail on Windows with `--with_python`?
+++++++++- **1. Transitive Header Leakage on Linux:** On Linux, OpenVINO core and GenAI headers are installed together in `/usr/local/include/`. When a Bazel target depends on `//third_party:openvino`, Bazel passes `-I/usr/local/include` to GCC. Because both core and GenAI headers live in `/usr/local/include`, GCC accidentally finds `<openvino/genai/tokenizer.hpp>` even if `"//third_party:genai"` was missing from `deps`.
+++++++++- **2. Strict Header Isolation on Windows:** In our clean build architecture, local GenAI headers are isolated in `genai_hdrs`. If a target omits `"//third_party:genai"`, Bazel refuses to pass `-Igenai_hdrs` to MSVC, immediately triggering `fatal error C1083`.
+++++++++- **3. Skipped Feature Targets in Upstream Windows CI:** Upstream's minimal Windows CI builds without Python (`--with_python`) and skips compiling MediaPipe + Python feature targets (like `tokenize_parser`, `embeddings_servable`, and `t2s_servable`). Building with `--with_python` (`--config=win_mp_on_py_on`) compiles these targets on Windows for the first time, exposing the missing dependencies.
+++++++++
+++++++++
+ +++++++
+ ++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ ++++++new file mode 100644
+-++++++index 00000000..eae74a10
++++++++index 00000000..fba082ae
+ ++++++--- /dev/null
+ +++++++++ b/win2026_genai_build.patch
+-++++++@@ -0,0 +1,2363 @@
++++++++@@ -0,0 +1,2948 @@
+ +++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ +++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -6416,25 +7322,25 @@ index 00000000..78bf8a67
+ +++++++2.50.1.windows.1
+ +++++++
+ +++++++
+-+++++++From ab85cf6ab23c8a944ef7f2d102759a9215b5bcdd Mon Sep 17 00:00:00 2001
+++++++++From 60e738e55f70fb5fd9449f55595b826e231c21a0 Mon Sep 17 00:00:00 2001
+ +++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ +++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ +++++++ file
+ +++++++
+ +++++++---
+-+++++++ WIN2026_BUILD_GUIDE.md    |  257 ++++++
+-+++++++ win2026_genai_build.patch | 1804 +++++++++++++++++++++++++++++++++++++
+-+++++++ 2 files changed, 2061 insertions(+)
+++++++++ WIN2026_BUILD_GUIDE.md    |  283 +++++
+++++++++ win2026_genai_build.patch | 2363 +++++++++++++++++++++++++++++++++++++
+++++++++ 2 files changed, 2646 insertions(+)
+ +++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ +++++++ create mode 100644 win2026_genai_build.patch
+ +++++++
+ +++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ +++++++new file mode 100644
+-+++++++index 00000000..53d43839
+++++++++index 00000000..d38f221a
+ +++++++--- /dev/null
+ ++++++++++ b/WIN2026_BUILD_GUIDE.md
+-+++++++@@ -0,0 +1,257 @@
+++++++++@@ -0,0 +1,283 @@
+ ++++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ ++++++++
+ ++++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -6692,12 +7598,38 @@ index 00000000..78bf8a67
+ ++++++++  build:windows --host_copt=/wd5285
+ ++++++++  ```
+ ++++++++
++++++++++### Q4: Is `src/version.hpp` generated automatically during build?
++++++++++- **Why it matters:** `src/version.hpp` contains `#define PROJECT_VERSION "2026.3.0.921fa646"` and `#define BAZEL_BUILD_FLAGS "--config=win_mp_on_py_on"`.
++++++++++- **How it works:** When `windows_build.bat` runs, it executes `windows_set_ovms_version.py`. This script queries `git rev-parse --short HEAD` (commit hash `921fa646`) and active Bazel build flags, then automatically generates and overwrites `src/version.hpp`.
++++++++++
++++++++++### Q5: How does `third_party/genai/genai_windows.BUILD` work?
++++++++++- **Bazel syntax breakdown:**
++++++++++  ```python
++++++++++  cc_library(
++++++++++      name = "genai_headers",
++++++++++      hdrs = glob(["genai_hdrs/openvino/**/*.*"]),
++++++++++      strip_include_prefix = "genai_hdrs",
++++++++++      deps = ["@windows_openvino//:openvino_new_headers"],
++++++++++      visibility = ["//visibility:public"],
++++++++++  )
++++++++++  ```
++++++++++  - `glob(["genai_hdrs/openvino/**/*.*"])`: Recursively globs all GenAI C++ headers staged in `C:\opt\openvino\runtime\genai_hdrs\openvino\`.
++++++++++  - `strip_include_prefix = "genai_hdrs"`: Strips the `genai_hdrs/` prefix from include paths, allowing source files to write `#include <openvino/genai/llm_pipeline.hpp>`.
++++++++++  - `deps = ["@windows_openvino//:openvino_new_headers"]`: Instructs Bazel to transitively supply core OpenVINO headers (e.g. `<openvino/runtime/tensor.hpp>`) whenever GenAI headers are included.
++++++++++
++++++++++### Q6: What is `@windows_openvino//:openvino_new_headers` in Bazel label syntax?
++++++++++- **Bazel label breakdown:** `@repo_name//package_path:target_name`
++++++++++  - `@windows_openvino`: External repository defined in `WORKSPACE` pointing to `C:\opt\openvino\runtime` using `third_party/openvino/openvino_windows.BUILD`.
++++++++++  - `//`: Root package path of the repository.
++++++++++  - `:openvino_new_headers`: C++ header target defined in `third_party/openvino/openvino_windows.BUILD` that globs core OpenVINO headers (`include/openvino/**/*.*`).
++++++++++
++++++++++
+ +++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ +++++++new file mode 100644
+-+++++++index 00000000..dbe3784f
+++++++++index 00000000..eae74a10
+ +++++++--- /dev/null
+ ++++++++++ b/win2026_genai_build.patch
+-+++++++@@ -0,0 +1,1804 @@
+++++++++@@ -0,0 +1,2363 @@
+ ++++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ ++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -6972,25 +7904,25 @@ index 00000000..78bf8a67
+ ++++++++2.50.1.windows.1
+ ++++++++
+ ++++++++
+-++++++++From b3c46004fa30f57b2c201475ef1c5d8448f87ee1 Mon Sep 17 00:00:00 2001
++++++++++From ab85cf6ab23c8a944ef7f2d102759a9215b5bcdd Mon Sep 17 00:00:00 2001
+ ++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ ++++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ++++++++ file
+ ++++++++
+ ++++++++---
+-++++++++ WIN2026_BUILD_GUIDE.md    |  227 +++++++
+-++++++++ win2026_genai_build.patch | 1275 +++++++++++++++++++++++++++++++++++++
+-++++++++ 2 files changed, 1502 insertions(+)
++++++++++ WIN2026_BUILD_GUIDE.md    |  257 ++++++
++++++++++ win2026_genai_build.patch | 1804 +++++++++++++++++++++++++++++++++++++
++++++++++ 2 files changed, 2061 insertions(+)
+ ++++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ ++++++++ create mode 100644 win2026_genai_build.patch
+ ++++++++
+ ++++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ ++++++++new file mode 100644
+-++++++++index 00000000..37871fa6
++++++++++index 00000000..53d43839
+ ++++++++--- /dev/null
+ +++++++++++ b/WIN2026_BUILD_GUIDE.md
+-++++++++@@ -0,0 +1,227 @@
++++++++++@@ -0,0 +1,257 @@
+ +++++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ +++++++++
+ +++++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -7218,12 +8150,42 @@ index 00000000..78bf8a67
+ +++++++++
+ +++++++++3. **MSVC 14.51 Compiler Warning (`C5285`):**
+ +++++++++   MSVC 14.51 enforces warning C5285 on XLA header files. This is suppressed globally in `.bazelrc` using `--copt=/wd5285` and `--host_copt=/wd5285`.
+++++++++++
+++++++++++---
+++++++++++
+++++++++++## 7. Future MSVC Toolset Upgrade Guide & Architectural FAQs
+++++++++++
+++++++++++When a new Visual Studio IDE version or MSVC compiler toolset update is released in the future, follow this checklist to anticipate and resolve toolchain issues:
+++++++++++
+++++++++++### Q1: How do I find and update `BAZEL_VC_FULL_VERSION` for a new MSVC release?
+++++++++++- **Why it matters:** Bazel does not search `%PATH%` for `cl.exe`. It constructs the exact path using `VC\Tools\MSVC\<BAZEL_VC_FULL_VERSION>\`.
+++++++++++- **How to find it:** Run PowerShell:
+++++++++++  ```powershell
+++++++++++  Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\<VS_VERSION>\BuildTools\VC\Tools\MSVC"
+++++++++++  ```
+++++++++++- **Action:** Update `BAZEL_VC_FULL_VERSION` in `windows_build.bat`, `windows_setupvars.bat`, `windows_install_build_dependencies.bat`, and `windows_test.bat`.
+++++++++++
+++++++++++### Q2: Why must CMake Generator `-G` and Toolset `-T` be updated together?
+++++++++++- **Why it matters:** CMake's default generator (e.g. `"Visual Studio 17 2022"`) does not recognize toolsets newer than its release (e.g. `-T v145`). Omitting `-G` causes CMake to fail with `Generator does not support toolset`.
+++++++++++- **Action:** Pair the generator with the matching toolset:
+++++++++++  ```cmd
+++++++++++  cmake -G "Visual Studio 18 2026" -T v145 ..
+++++++++++  ```
+++++++++++
+++++++++++### Q3: Why add `--copt=/wd<WARNING_ID>` flags in `.bazelrc`?
+++++++++++- **Why it matters:** New MSVC toolsets introduce new warning codes. Because OVMS compiles with `/WX` (warnings-as-errors), newly introduced MSVC warnings in third-party headers (such as XLA/TensorFlow SIMD headers) will abort the build.
+++++++++++- **Action:** If a new MSVC compiler update introduces a fatal warning (e.g. `fatal error C5285`), suppress it in `.bazelrc` via `/wd<WARNING_ID>`:
+++++++++++  ```ini
+++++++++++  build:windows --copt=/wd5285
+++++++++++  build:windows --host_copt=/wd5285
+++++++++++  ```
+++++++++++
+ ++++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ ++++++++new file mode 100644
+-++++++++index 00000000..7de85906
++++++++++index 00000000..dbe3784f
+ ++++++++--- /dev/null
+ +++++++++++ b/win2026_genai_build.patch
+-++++++++@@ -0,0 +1,1275 @@
++++++++++@@ -0,0 +1,1804 @@
+ +++++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ +++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -7498,25 +8460,25 @@ index 00000000..78bf8a67
+ +++++++++2.50.1.windows.1
+ +++++++++
+ +++++++++
+-+++++++++From 71bef4b64f31c6dc00ce2085506e46511844b80c Mon Sep 17 00:00:00 2001
+++++++++++From b3c46004fa30f57b2c201475ef1c5d8448f87ee1 Mon Sep 17 00:00:00 2001
+ +++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ +++++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ +++++++++ file
+ +++++++++
+ +++++++++---
+-+++++++++ WIN2026_BUILD_GUIDE.md    | 206 ++++++++++
+-+++++++++ win2026_genai_build.patch | 767 ++++++++++++++++++++++++++++++++++++++
+-+++++++++ 2 files changed, 973 insertions(+)
+++++++++++ WIN2026_BUILD_GUIDE.md    |  227 +++++++
+++++++++++ win2026_genai_build.patch | 1275 +++++++++++++++++++++++++++++++++++++
+++++++++++ 2 files changed, 1502 insertions(+)
+ +++++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ +++++++++ create mode 100644 win2026_genai_build.patch
+ +++++++++
+ +++++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ +++++++++new file mode 100644
+-+++++++++index 00000000..68dd3c87
+++++++++++index 00000000..37871fa6
+ +++++++++--- /dev/null
+ ++++++++++++ b/WIN2026_BUILD_GUIDE.md
+-+++++++++@@ -0,0 +1,206 @@
+++++++++++@@ -0,0 +1,227 @@
+ ++++++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ ++++++++++
+ ++++++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -7670,6 +8632,27 @@ index 00000000..78bf8a67
+ ++++++++++  }'
+ ++++++++++```
+ ++++++++++
++++++++++++### OpenAI Responses API Request (`/v3/responses`):
++++++++++++```bash
++++++++++++curl -X POST http://localhost:8000/v3/responses \
++++++++++++  -H "Content-Type: application/json" \
++++++++++++  -d '{
++++++++++++    "model": "gemma",
++++++++++++    "input": [
++++++++++++      {
++++++++++++        "role": "user",
++++++++++++        "content": [
++++++++++++          {
++++++++++++            "type": "input_text",
++++++++++++            "text": "Who is the Prime Minister of Malaysia?"
++++++++++++          }
++++++++++++        ]
++++++++++++      }
++++++++++++    ],
++++++++++++    "max_output_tokens": 64
++++++++++++  }'
++++++++++++```
++++++++++++
+ ++++++++++### Stop Server:
+ ++++++++++To stop the server process after completing inference requests:
+ ++++++++++
+@@ -7725,10 +8708,10 @@ index 00000000..78bf8a67
+ ++++++++++   MSVC 14.51 enforces warning C5285 on XLA header files. This is suppressed globally in `.bazelrc` using `--copt=/wd5285` and `--host_copt=/wd5285`.
+ +++++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ +++++++++new file mode 100644
+-+++++++++index 00000000..27cd6e3b
+++++++++++index 00000000..7de85906
+ +++++++++--- /dev/null
+ ++++++++++++ b/win2026_genai_build.patch
+-+++++++++@@ -0,0 +1,767 @@
+++++++++++@@ -0,0 +1,1275 @@
+ ++++++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ ++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+@@ -8003,25 +8986,25 @@ index 00000000..78bf8a67
+ ++++++++++2.50.1.windows.1
+ ++++++++++
+ ++++++++++
+-++++++++++From 154a73f0332b43b50cf7de0e13522a838b4bbc8a Mon Sep 17 00:00:00 2001
++++++++++++From 71bef4b64f31c6dc00ce2085506e46511844b80c Mon Sep 17 00:00:00 2001
+ ++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ ++++++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+ ++++++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+ ++++++++++ file
+ ++++++++++
+ ++++++++++---
+-++++++++++ WIN2026_BUILD_GUIDE.md    | 192 +++++++++++++++++++++++++++
+-++++++++++ win2026_genai_build.patch | 273 ++++++++++++++++++++++++++++++++++++++
+-++++++++++ 2 files changed, 465 insertions(+)
++++++++++++ WIN2026_BUILD_GUIDE.md    | 206 ++++++++++
++++++++++++ win2026_genai_build.patch | 767 ++++++++++++++++++++++++++++++++++++++
++++++++++++ 2 files changed, 973 insertions(+)
+ ++++++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+ ++++++++++ create mode 100644 win2026_genai_build.patch
+ ++++++++++
+ ++++++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+ ++++++++++new file mode 100644
+-++++++++++index 00000000..9edba049
++++++++++++index 00000000..68dd3c87
+ ++++++++++--- /dev/null
+ +++++++++++++ b/WIN2026_BUILD_GUIDE.md
+-++++++++++@@ -0,0 +1,192 @@
++++++++++++@@ -0,0 +1,206 @@
+ +++++++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
+ +++++++++++
+ +++++++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
+@@ -8175,6 +9158,20 @@ index 00000000..78bf8a67
+ +++++++++++  }'
+ +++++++++++```
+ +++++++++++
+++++++++++++### Stop Server:
+++++++++++++To stop the server process after completing inference requests:
+++++++++++++
+++++++++++++- **Command Prompt (CMD):**
+++++++++++++  ```cmd
+++++++++++++  taskkill /F /IM ovms.exe
+++++++++++++  ```
+++++++++++++- **PowerShell:**
+++++++++++++  ```powershell
+++++++++++++  Get-Process ovms -ErrorAction SilentlyContinue | Stop-Process -Force
+++++++++++++  ```
+++++++++++++- **Interactive Console:**
+++++++++++++  Press `Ctrl + C` in the active terminal window to initiate a graceful shutdown.
+++++++++++++
+ +++++++++++---
+ +++++++++++
+ +++++++++++## 5. How to Reapply Changes on Upstream Updates
+@@ -8216,14 +9213,14 @@ index 00000000..78bf8a67
+ +++++++++++   MSVC 14.51 enforces warning C5285 on XLA header files. This is suppressed globally in `.bazelrc` using `--copt=/wd5285` and `--host_copt=/wd5285`.
+ ++++++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+ ++++++++++new file mode 100644
+-++++++++++index 00000000..a98f0101
++++++++++++index 00000000..27cd6e3b
+ ++++++++++--- /dev/null
+ +++++++++++++ b/win2026_genai_build.patch
+-++++++++++@@ -0,0 +1,273 @@
++++++++++++@@ -0,0 +1,767 @@
+ +++++++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
+ +++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
+-+++++++++++Subject: [PATCH 1/3] build(windows): update build scripts and warning flags
+++++++++++++Subject: [PATCH 1/4] build(windows): update build scripts and warning flags
+ +++++++++++ for VS 2026 BuildTools (MSVC 14.51)
+ +++++++++++
+ +++++++++++---
+@@ -8369,7 +9366,7 @@ index 00000000..78bf8a67
+ +++++++++++From c37c9e2399005c5d1d6c0d9bb7b61e0a920f576f Mon Sep 17 00:00:00 2001
+ +++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++++++Date: Fri, 24 Jul 2026 04:37:39 +0200
+-+++++++++++Subject: [PATCH 2/3] build(bazel): update genai_windows.BUILD globs and
+++++++++++++Subject: [PATCH 2/4] build(bazel): update genai_windows.BUILD globs and
+ +++++++++++ transitive headers
+ +++++++++++
+ +++++++++++---
+@@ -8419,7 +9416,7 @@ index 00000000..78bf8a67
+ +++++++++++From 59c5d73e38f02424ae215576d94d7825c60e9966 Mon Sep 17 00:00:00 2001
+ +++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+ +++++++++++Date: Fri, 24 Jul 2026 04:37:43 +0200
+-+++++++++++Subject: [PATCH 3/3] build(deps): wire //third_party:genai dependencies into
+++++++++++++Subject: [PATCH 3/4] build(deps): wire //third_party:genai dependencies into
+ +++++++++++ src Bazel targets
+ +++++++++++
+ +++++++++++---
+@@ -8493,6 +9490,500 @@ index 00000000..78bf8a67
+ +++++++++++-- 
+ +++++++++++2.50.1.windows.1
+ +++++++++++
+++++++++++++
+++++++++++++From 154a73f0332b43b50cf7de0e13522a838b4bbc8a Mon Sep 17 00:00:00 2001
+++++++++++++From: hsm207 <hsm207@users.noreply.github.com>
+++++++++++++Date: Fri, 24 Jul 2026 04:37:59 +0200
+++++++++++++Subject: [PATCH 4/4] docs: add Windows VS 2026 build guide and portable patch
+++++++++++++ file
+++++++++++++
+++++++++++++---
+++++++++++++ WIN2026_BUILD_GUIDE.md    | 192 +++++++++++++++++++++++++++
+++++++++++++ win2026_genai_build.patch | 273 ++++++++++++++++++++++++++++++++++++++
+++++++++++++ 2 files changed, 465 insertions(+)
+++++++++++++ create mode 100644 WIN2026_BUILD_GUIDE.md
+++++++++++++ create mode 100644 win2026_genai_build.patch
+++++++++++++
+++++++++++++diff --git a/WIN2026_BUILD_GUIDE.md b/WIN2026_BUILD_GUIDE.md
+++++++++++++new file mode 100644
+++++++++++++index 00000000..9edba049
+++++++++++++--- /dev/null
++++++++++++++++ b/WIN2026_BUILD_GUIDE.md
+++++++++++++@@ -0,0 +1,192 @@
++++++++++++++# OpenVINO Model Server (OVMS) - Windows VS 2026 Build & Patch Guide
++++++++++++++
++++++++++++++This document explains how to build OpenVINO Model Server (OVMS) on Windows using **Visual Studio 2026 BuildTools (MSVC 14.51)** linked natively against custom locally built **OpenVINO (2026.4.0)** and **OpenVINO GenAI (2026.4.0.0)** libraries (supporting `gemma4_unified` models on GPU/CPU).
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 1. Patch Architecture & Strategy
++++++++++++++
++++++++++++++To ensure seamless upgrades when upstream `model_server` releases updates, all modifications are structured into atomic Git commits and exported as a portable Git patch:
++++++++++++++
++++++++++++++- **Git Branch:** `feature/win2026-vs-build`
++++++++++++++- **Patch File:** `win2026_genai_build.patch`
++++++++++++++
++++++++++++++### Commit Structure:
++++++++++++++1. `d3d0a2a9` **`build(windows): update build scripts and warning flags for VS 2026 BuildTools (MSVC 14.51)`**
++++++++++++++   - Updates Visual Studio paths to `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools`
++++++++++++++   - Configures MSVC compiler version `BAZEL_VC_FULL_VERSION=14.51.36231`
++++++++++++++   - Updates CMake generator strings to `"Visual Studio 18 2026"` and toolset `-T v145`
++++++++++++++   - Suppresses MSVC 14.51 C5285 warnings originating from XLA headers in `.bazelrc` (`/wd5285`)
++++++++++++++
++++++++++++++2. `c37c9e23` **`build(bazel): update genai_windows.BUILD globs and transitive headers`**
++++++++++++++   - Configures `third_party/genai/genai_windows.BUILD` to consume headers from `genai_hdrs/openvino/**/*.*` with `strip_include_prefix = "genai_hdrs"`
++++++++++++++   - Adds `deps = ["@windows_openvino//:openvino_new_headers"]` so core OpenVINO headers (e.g. `<openvino/runtime/tensor.hpp>`) are transitively declared
++++++++++++++
++++++++++++++3. `59c5d73e` **`build(deps): wire //third_party:genai dependencies into src Bazel targets`**
++++++++++++++   - Adds `"//third_party:genai"` dependency to targets missing explicit GenAI headers:
++++++++++++++     - `src/tokenize/BUILD` (`tokenize_parser`)
++++++++++++++     - `src/embeddings/BUILD` (`embeddings_servable`)
++++++++++++++     - `src/audio/text_to_speech/BUILD` (`t2s_servable`, `t2s_calculator`)
++++++++++++++     - `src/BUILD` (`libovms_version_impl`)
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 2. Staging Local OpenVINO & GenAI Dependencies
++++++++++++++
++++++++++++++OVMS expects OpenVINO runtime dependencies in `C:\opt\openvino\runtime`. Before building, local build output binaries and headers must be staged:
++++++++++++++
++++++++++++++### PowerShell Staging Script (`stage_local_deps.ps1`):
++++++++++++++
++++++++++++++```powershell
++++++++++++++# Paths
++++++++++++++$ovRuntime = "C:\opt\openvino\runtime"
++++++++++++++$genaiRepo = "C:\Users\mohds\Documents\GitHub\openvino.genai"
++++++++++++++$ovRepo    = "C:\Users\mohds\Documents\GitHub\openvino"
++++++++++++++
++++++++++++++# 1. Stage GenAI C++ headers (source + CMake-generated headers like version.hpp)
++++++++++++++$genaiHdrsDst = "$ovRuntime\genai_hdrs\openvino\genai"
++++++++++++++New-Item -ItemType Directory -Force -Path $genaiHdrsDst | Out-Null
++++++++++++++Copy-Item "$genaiRepo\src\cpp\include\openvino\genai\*" $genaiHdrsDst -Recurse -Force
++++++++++++++if (Test-Path "$genaiRepo\build\src\cpp\openvino\genai\version.hpp") {
++++++++++++++    Copy-Item "$genaiRepo\build\src\cpp\openvino\genai\version.hpp" $genaiHdrsDst -Force
++++++++++++++}
++++++++++++++
++++++++++++++# 2. Stage GenAI Binaries (.dll and .lib)
++++++++++++++Copy-Item "$genaiRepo\build\openvino_genai\bin\Release\*.dll" "$ovRuntime\bin\intel64\Release" -Force
++++++++++++++Copy-Item "$genaiRepo\build\openvino_genai\lib\Release\*.lib" "$ovRuntime\lib\intel64\Release" -Force
++++++++++++++
++++++++++++++# 3. Stage OpenVINO Core Binaries (.dll and .lib)
++++++++++++++Copy-Item "$ovRepo\bin\intel64\Release\*.dll" "$ovRuntime\bin\intel64\Release" -Force
++++++++++++++Copy-Item "$ovRepo\bin\intel64\Release\*.lib" "$ovRuntime\lib\intel64\Release" -Force
++++++++++++++```
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 3. Building and Packaging OVMS
++++++++++++++
++++++++++++++### Step 1: Clean Build Output Root (Optional if clearing Bazel cache)
++++++++++++++```cmd
++++++++++++++windows_clean_build.bat opt 1
++++++++++++++```
++++++++++++++
++++++++++++++### Step 2: Build OVMS Binary
++++++++++++++```cmd
++++++++++++++windows_build.bat opt --with_python
++++++++++++++```
++++++++++++++*Output binary:* `bazel-bin\src\ovms.exe`
++++++++++++++
++++++++++++++### Step 3: Create Self-Contained Release Package
++++++++++++++```cmd
++++++++++++++windows_create_package.bat opt --with_python
++++++++++++++```
++++++++++++++*Output archive:* `dist\windows\ovms.zip` (Extracted at `dist\windows\ovms\`)
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 4. Serving & Running VLM Models on GPU
++++++++++++++
++++++++++++++### Model Graph Configuration (`graph.pbtxt`):
++++++++++++++Ensure the Mediapipe graph options set `device: "GPU"`:
++++++++++++++
++++++++++++++```pbtxt
++++++++++++++input_stream: "HTTP_REQUEST_PAYLOAD:input"
++++++++++++++output_stream: "HTTP_RESPONSE_PAYLOAD:output"
++++++++++++++
++++++++++++++node: {
++++++++++++++  name: "LLMExecutor"
++++++++++++++  calculator: "HttpLLMCalculator"
++++++++++++++  input_stream: "LOOPBACK:loopback"
++++++++++++++  input_stream: "HTTP_REQUEST_PAYLOAD:input"
++++++++++++++  input_side_packet: "LLM_NODE_RESOURCES:llm"
++++++++++++++  output_stream: "LOOPBACK:loopback"
++++++++++++++  output_stream: "HTTP_RESPONSE_PAYLOAD:output"
++++++++++++++  input_stream_info: {
++++++++++++++    tag_index: 'LOOPBACK:0',
++++++++++++++    back_edge: true
++++++++++++++  }
++++++++++++++  node_options: {
++++++++++++++      [type.googleapis.com / mediapipe.LLMCalculatorOptions]: {
++++++++++++++          models_path: "C:/Users/mohds/Documents/GitHub/openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov",
++++++++++++++          plugin_config: '{}',
++++++++++++++          dynamic_split_fuse: false,
++++++++++++++          max_num_seqs: 256,
++++++++++++++          max_num_batched_tokens: 8192,
++++++++++++++          cache_size: 0,
++++++++++++++          device: "GPU",
++++++++++++++          pipeline_type: VLM
++++++++++++++      }
++++++++++++++  }
++++++++++++++  input_stream_handler {
++++++++++++++    input_stream_handler: "SyncSetInputStreamHandler",
++++++++++++++    options {
++++++++++++++      [mediapipe.SyncSetInputStreamHandlerOptions.ext] {
++++++++++++++        sync_set {
++++++++++++++          tag_index: "LOOPBACK:0"
++++++++++++++        }
++++++++++++++      }
++++++++++++++    }
++++++++++++++  }
++++++++++++++}
++++++++++++++```
++++++++++++++
++++++++++++++### Start Server:
++++++++++++++```cmd
++++++++++++++call dist\windows\ovms\setupvars.bat
++++++++++++++dist\windows\ovms\ovms.exe --config_path C:\Users\mohds\Documents\GitHub\openvino-artifacts\ovms_config.json --port 9000 --rest_port 8000
++++++++++++++```
++++++++++++++
++++++++++++++### OpenAI API Chat Completion Request:
++++++++++++++```bash
++++++++++++++curl -X POST http://localhost:8000/v3/chat/completions \
++++++++++++++  -H "Content-Type: application/json" \
++++++++++++++  -d '{
++++++++++++++    "model": "gemma",
++++++++++++++    "messages": [
++++++++++++++      {
++++++++++++++        "role": "user",
++++++++++++++        "content": "Who is the Prime Minister of Malaysia?"
++++++++++++++      }
++++++++++++++    ],
++++++++++++++    "max_tokens": 64
++++++++++++++  }'
++++++++++++++```
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 5. How to Reapply Changes on Upstream Updates
++++++++++++++
++++++++++++++When `model_server` receives updates from upstream `origin/main`:
++++++++++++++
++++++++++++++### Method A: Git Apply (Fastest)
++++++++++++++```bash
++++++++++++++# 1. Fetch and checkout latest upstream
++++++++++++++git checkout main
++++++++++++++git pull origin main
++++++++++++++
++++++++++++++# 2. Apply patch file
++++++++++++++git apply win2026_genai_build.patch
++++++++++++++```
++++++++++++++
++++++++++++++### Method B: Git Rebase (Recommended for Git History)
++++++++++++++```bash
++++++++++++++# 1. Fetch latest upstream
++++++++++++++git fetch origin
++++++++++++++
++++++++++++++# 2. Rebase feature branch onto updated main
++++++++++++++git checkout feature/win2026-vs-build
++++++++++++++git rebase origin/main
++++++++++++++```
++++++++++++++*(If merge conflicts occur, resolve the conflict and run `git rebase --continue`).*
++++++++++++++
++++++++++++++---
++++++++++++++
++++++++++++++## 6. Key Troubleshooting Insights
++++++++++++++
++++++++++++++1. **Missing `version.hpp` (`C1083` error):**
++++++++++++++   `version.hpp` is a CMake-generated header generated into `openvino.genai\build\src\cpp\openvino\genai\version.hpp`. Ensure `stage_local_deps.ps1` copies from `build\` into `C:\opt\openvino\runtime\genai_hdrs\openvino\genai`.
++++++++++++++
++++++++++++++2. **Bazel Output Root (`C:\opt`):**
++++++++++++++   `windows_build.bat` passes `--output_user_root=C:\opt`. Do NOT run plain `bazel clean` without `--output_user_root=C:\opt`, otherwise stale cached external symlinks will persist. Use `windows_clean_build.bat opt 1`.
++++++++++++++
++++++++++++++3. **MSVC 14.51 Compiler Warning (`C5285`):**
++++++++++++++   MSVC 14.51 enforces warning C5285 on XLA header files. This is suppressed globally in `.bazelrc` using `--copt=/wd5285` and `--host_copt=/wd5285`.
+++++++++++++diff --git a/win2026_genai_build.patch b/win2026_genai_build.patch
+++++++++++++new file mode 100644
+++++++++++++index 00000000..a98f0101
+++++++++++++--- /dev/null
++++++++++++++++ b/win2026_genai_build.patch
+++++++++++++@@ -0,0 +1,273 @@
++++++++++++++From d3d0a2a9c68756761c799d0a7405423d443f675f Mon Sep 17 00:00:00 2001
++++++++++++++From: hsm207 <hsm207@users.noreply.github.com>
++++++++++++++Date: Fri, 24 Jul 2026 04:37:35 +0200
++++++++++++++Subject: [PATCH 1/3] build(windows): update build scripts and warning flags
++++++++++++++ for VS 2026 BuildTools (MSVC 14.51)
++++++++++++++
++++++++++++++---
++++++++++++++ .bazelrc                               |  3 +++
++++++++++++++ windows_build.bat                      |  4 ++--
++++++++++++++ windows_install_build_dependencies.bat | 11 ++++++-----
++++++++++++++ windows_setupvars.bat                  |  4 ++--
++++++++++++++ windows_test.bat                       |  4 ++--
++++++++++++++ 5 files changed, 15 insertions(+), 11 deletions(-)
++++++++++++++
++++++++++++++diff --git a/.bazelrc b/.bazelrc
++++++++++++++index fb3745fc..6c9b8ec1 100644
++++++++++++++--- a/.bazelrc
+++++++++++++++++ b/.bazelrc
++++++++++++++@@ -177,6 +177,9 @@ build:windows --config=monolithic
++++++++++++++ # Warnings are enabled in common_settings
++++++++++++++ build:windows --copt=/W0 
++++++++++++++ build:windows --host_copt=/W0
+++++++++++++++# VS 2026 (MSVC 14.51.36231) emits C5285 for std::is_signed specializations in XLA.
+++++++++++++++build:windows --copt=/wd5285
+++++++++++++++build:windows --host_copt=/wd5285
++++++++++++++ build:windows --copt=/external:anglebrackets
++++++++++++++ build:windows --host_copt=/external:anglebrackets
++++++++++++++ build:windows --copt=/external:W0
++++++++++++++diff --git a/windows_build.bat b/windows_build.bat
++++++++++++++index 4c3f1000..c39b419e 100644
++++++++++++++--- a/windows_build.bat
+++++++++++++++++ b/windows_build.bat
++++++++++++++@@ -69,7 +69,7 @@ for /f "usebackq eol=# tokens=1,3" %%A in ("%cd%\versions.mk") do (
++++++++++++++ )
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings
++++++++++++++-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+++++++++++++++set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
++++++++++++++ IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
++++++++++++++ 
++++++++++++++ :msvc_error
++++++++++++++@@ -82,7 +82,7 @@ set BAZEL_VS=%VS_2022_BT%
++++++++++++++ :: Bazel compilation settings end
++++++++++++++ :msvc_end
++++++++++++++ set "BAZEL_VC=%BAZEL_VS:"=%\VC"
++++++++++++++-set "BAZEL_VC_FULL_VERSION=14.44.35207"
+++++++++++++++set "BAZEL_VC_FULL_VERSION=14.51.36231"
++++++++++++++ 
++++++++++++++ :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel to PATH
++++++++++++++ set "PATH=%setPath%"
++++++++++++++diff --git a/windows_install_build_dependencies.bat b/windows_install_build_dependencies.bat
++++++++++++++index 3ac79c29..f94328e3 100644
++++++++++++++--- a/windows_install_build_dependencies.bat
+++++++++++++++++ b/windows_install_build_dependencies.bat
++++++++++++++@@ -47,13 +47,13 @@ set "BAZEL_SHORT_PATH=C:\%output_user_root%"
++++++++++++++ set "opt_install_dir=C:\opt"
++++++++++++++ 
++++++++++++++ :: Python 312 needs to be first in the windows path, as well as MSYS tools
++++++++++++++-set "setPath=C:\opt;C:\opt\Python312\;C:\opt\Python312\Scripts\;C:\opt\msys64\usr\bin\;c:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\;%PATH%;"
+++++++++++++++set "setPath=C:\opt;C:\opt\Python312\;C:\opt\Python312\Scripts\;C:\opt\msys64\usr\bin\;c:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\;%PATH%;"
++++++++++++++ set "PYTHONHOME=C:\opt\Python312"
++++++++++++++ :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel, wget to PATH
++++++++++++++ set "PATH=%setPath%"
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings
++++++++++++++-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+++++++++++++++set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
++++++++++++++ IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
++++++++++++++ 
++++++++++++++ :msvc_error
++++++++++++++@@ -62,6 +62,7 @@ goto :exit_build_error
++++++++++++++ :msvc_bt
++++++++++++++ echo [INFO] Using MSVC %VS_2022_BT%
++++++++++++++ set BAZEL_VS=%VS_2022_BT%
+++++++++++++++set "BAZEL_VC_FULL_VERSION=14.51.36231"
++++++++++++++ 
++++++++++++++ :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
++++++++++++++ ::::::::::::::::::::::: Check directories
++++++++++++++@@ -264,7 +265,7 @@ IF /I NOT EXIST build (
++++++++++++++ )
++++++++++++++ cd build
++++++++++++++ set "TBB_DIR="
++++++++++++++-cmake -G "Visual Studio 17 2022" -DENABLE_SAMPLES=OFF -DENABLE_INTEL_NPU_PROTOPIPE=OFF ..
+++++++++++++++cmake -G "Visual Studio 18 2026" -DENABLE_SAMPLES=OFF -DENABLE_INTEL_NPU_PROTOPIPE=OFF ..
++++++++++++++ if !errorlevel! neq 0 exit /b !errorlevel!
++++++++++++++ cmake --build . --config Release --verbose -j
++++++++++++++ if !errorlevel! neq 0 exit /b !errorlevel!
++++++++++++++@@ -620,8 +621,8 @@ if "%ENABLE_INTEGRITYCHECK%"=="1" (
++++++++++++++     set "SDL_OPS=/GS /sdl /guard:cf /DYNAMICBASE /NXCOMPAT /W4 /WX /LTCG"
++++++++++++++ )
++++++++++++++ 
++++++++++++++-:: Expected compilers in CI - -G "Visual Studio 16 2019", local -G "Visual Studio 17 2022" as default
++++++++++++++-cmake -T v142 .. -D CMAKE_INSTALL_PREFIX=%opencv_install% -D OPENCV_EXTRA_MODULES_PATH=%opencv_contrib_dir%\modules %opencv_flags% %SDL_OPS%
+++++++++++++++:: Expected compilers in CI - -G "Visual Studio 16 2019", local -G "Visual Studio 18 2026" / toolset v145
+++++++++++++++cmake -G "Visual Studio 18 2026" -T v145 .. -D CMAKE_INSTALL_PREFIX=%opencv_install% -D OPENCV_EXTRA_MODULES_PATH=%opencv_contrib_dir%\modules %opencv_flags% %SDL_OPS%
++++++++++++++ if !errorlevel! neq 0 exit /b !errorlevel!
++++++++++++++ cmake --build . --config Release -j %NUMBER_OF_PROCESSORS%
++++++++++++++ if !errorlevel! neq 0 exit /b !errorlevel!
++++++++++++++diff --git a/windows_setupvars.bat b/windows_setupvars.bat
++++++++++++++index 87d1bd55..0005e4bd 100644
++++++++++++++--- a/windows_setupvars.bat
+++++++++++++++++ b/windows_setupvars.bat
++++++++++++++@@ -27,7 +27,7 @@ set "setPythonPath=%cd%\bazel-out\x64_windows-opt\bin\src\python\binding"
++++++++++++++ set "BAZEL_SH=C:\opt\msys64\usr\bin\bash.exe"
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings
++++++++++++++-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+++++++++++++++set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
++++++++++++++ IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
++++++++++++++ 
++++++++++++++ :msvc_error
++++++++++++++@@ -40,7 +40,7 @@ set BAZEL_VS=%VS_2022_BT%
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings end
++++++++++++++ set "BAZEL_VC=%BAZEL_VS:"=%\VC"
++++++++++++++-set "BAZEL_VC_FULL_VERSION=14.44.35207"
+++++++++++++++set "BAZEL_VC_FULL_VERSION=14.51.36231"
++++++++++++++ 
++++++++++++++ :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel to PATH
++++++++++++++ set "PATH=%setPath%"
++++++++++++++diff --git a/windows_test.bat b/windows_test.bat
++++++++++++++index f00948a1..dabe268e 100644
++++++++++++++--- a/windows_test.bat
+++++++++++++++++ b/windows_test.bat
++++++++++++++@@ -58,7 +58,7 @@ set "setPythonPath=%cd%\bazel-out\x64_windows-opt\bin\src\python\binding"
++++++++++++++ set "BAZEL_SH=C:\opt\msys64\usr\bin\bash.exe"
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings
++++++++++++++-set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+++++++++++++++set VS_2022_BT="C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools"
++++++++++++++ IF /I EXIST %VS_2022_BT% goto :msvc_bt ELSE goto :msvc_error
++++++++++++++ :msvc_error
++++++++++++++ echo [ERROR] Required MSVC compiler not installed
++++++++++++++@@ -69,7 +69,7 @@ set BAZEL_VS=%VS_2022_BT%
++++++++++++++ 
++++++++++++++ :: Bazel compilation settings end
++++++++++++++ set "BAZEL_VC=%BAZEL_VS:"=%\VC"
++++++++++++++-set "BAZEL_VC_FULL_VERSION=14.44.35207"
+++++++++++++++set "BAZEL_VC_FULL_VERSION=14.51.36231"
++++++++++++++ 
++++++++++++++ :: Set proper PATH environment variable: Remove other python paths and add c:\opt with bazel to PATH
++++++++++++++ set "PATH=%setPath%"
++++++++++++++-- 
++++++++++++++2.50.1.windows.1
++++++++++++++
++++++++++++++
++++++++++++++From c37c9e2399005c5d1d6c0d9bb7b61e0a920f576f Mon Sep 17 00:00:00 2001
++++++++++++++From: hsm207 <hsm207@users.noreply.github.com>
++++++++++++++Date: Fri, 24 Jul 2026 04:37:39 +0200
++++++++++++++Subject: [PATCH 2/3] build(bazel): update genai_windows.BUILD globs and
++++++++++++++ transitive headers
++++++++++++++
++++++++++++++---
++++++++++++++ src/version.hpp                       | 4 ++--
++++++++++++++ third_party/genai/genai_windows.BUILD | 7 +++++--
++++++++++++++ 2 files changed, 7 insertions(+), 4 deletions(-)
++++++++++++++
++++++++++++++diff --git a/src/version.hpp b/src/version.hpp
++++++++++++++index 57925cab..bc4dc45a 100644
++++++++++++++--- a/src/version.hpp
+++++++++++++++++ b/src/version.hpp
++++++++++++++@@ -16,8 +16,8 @@
++++++++++++++ #ifndef SRC_VERSION_HPP_
++++++++++++++ #define SRC_VERSION_HPP_
++++++++++++++ #define PROJECT_NAME "OpenVINO Model Server"
++++++++++++++-#define PROJECT_VERSION "REPLACE_PROJECT_VERSION"
++++++++++++++-#define BAZEL_BUILD_FLAGS "REPLACE_BAZEL_BUILD_FLAGS"
+++++++++++++++#define PROJECT_VERSION "2026.3.0.921fa646"
+++++++++++++++#define BAZEL_BUILD_FLAGS "--config=win_mp_on_py_on"
++++++++++++++ 
++++++++++++++ namespace ovms {
++++++++++++++ const char* getOpenVINOVersion();
++++++++++++++diff --git a/third_party/genai/genai_windows.BUILD b/third_party/genai/genai_windows.BUILD
++++++++++++++index 0f4cb24e..1853af35 100644
++++++++++++++--- a/third_party/genai/genai_windows.BUILD
+++++++++++++++++ b/third_party/genai/genai_windows.BUILD
++++++++++++++@@ -21,10 +21,13 @@ package(
++++++++++++++ cc_library(
++++++++++++++     name = "genai_headers",
++++++++++++++     hdrs = glob([
++++++++++++++-        "include/openvino/**/*.*"
+++++++++++++++        "genai_hdrs/openvino/**/*.*",
++++++++++++++     ]),
++++++++++++++-    strip_include_prefix = "include",
+++++++++++++++    strip_include_prefix = "genai_hdrs",
++++++++++++++     visibility = ["//visibility:public"],
+++++++++++++++    deps = [
+++++++++++++++        "@windows_openvino//:openvino_new_headers",
+++++++++++++++    ],
++++++++++++++ )
++++++++++++++ 
++++++++++++++ cc_import(
++++++++++++++-- 
++++++++++++++2.50.1.windows.1
++++++++++++++
++++++++++++++
++++++++++++++From 59c5d73e38f02424ae215576d94d7825c60e9966 Mon Sep 17 00:00:00 2001
++++++++++++++From: hsm207 <hsm207@users.noreply.github.com>
++++++++++++++Date: Fri, 24 Jul 2026 04:37:43 +0200
++++++++++++++Subject: [PATCH 3/3] build(deps): wire //third_party:genai dependencies into
++++++++++++++ src Bazel targets
++++++++++++++
++++++++++++++---
++++++++++++++ src/BUILD                      | 6 ++----
++++++++++++++ src/audio/text_to_speech/BUILD | 2 ++
++++++++++++++ src/embeddings/BUILD           | 1 +
++++++++++++++ src/tokenize/BUILD             | 1 +
++++++++++++++ 4 files changed, 6 insertions(+), 4 deletions(-)
++++++++++++++
++++++++++++++diff --git a/src/BUILD b/src/BUILD
++++++++++++++index 0abf61f1..ab066c6f 100644
++++++++++++++--- a/src/BUILD
+++++++++++++++++ b/src/BUILD
++++++++++++++@@ -315,10 +315,8 @@ ovms_cc_library(
++++++++++++++     deps = [
++++++++++++++         ":libovms_version",
++++++++++++++         "//third_party:openvino",
++++++++++++++-    ] + select({
++++++++++++++-        "//:not_disable_mediapipe": ["//third_party:genai"],
++++++++++++++-        "//conditions:default": [],
++++++++++++++-    }),
+++++++++++++++        "//third_party:genai",
+++++++++++++++    ],
++++++++++++++     visibility = ["//visibility:public",],
++++++++++++++     alwayslink = 1,
++++++++++++++ )
++++++++++++++diff --git a/src/audio/text_to_speech/BUILD b/src/audio/text_to_speech/BUILD
++++++++++++++index 65d0f0df..bd330b72 100644
++++++++++++++--- a/src/audio/text_to_speech/BUILD
+++++++++++++++++ b/src/audio/text_to_speech/BUILD
++++++++++++++@@ -23,6 +23,7 @@ ovms_cc_library(
++++++++++++++     srcs = ["t2s_servable.cpp"],
++++++++++++++         deps = [
++++++++++++++         "//third_party:genai",
+++++++++++++++        "//third_party:openvino",
++++++++++++++         "@mediapipe//mediapipe/framework:calculator_framework",
++++++++++++++         "//src:libovmslogging",
++++++++++++++         "//src:libmodelconfigjsonparser",
++++++++++++++@@ -39,6 +40,7 @@ ovms_cc_library(
++++++++++++++             "tts_node_initializer.cpp"],
++++++++++++++     deps = [
++++++++++++++         "//third_party:genai",
+++++++++++++++        "//third_party:openvino",
++++++++++++++         "@mediapipe//mediapipe/framework:calculator_framework",
++++++++++++++         "//src:httppayload",
++++++++++++++         "//src:libovmslogging",
++++++++++++++diff --git a/src/embeddings/BUILD b/src/embeddings/BUILD
++++++++++++++index 8b77f4f1..4fd3887f 100644
++++++++++++++--- a/src/embeddings/BUILD
+++++++++++++++++ b/src/embeddings/BUILD
++++++++++++++@@ -39,6 +39,7 @@ ovms_cc_library(
++++++++++++++         "//src:libovmslogging",
++++++++++++++         "//src:sidepacket_servable",
++++++++++++++         "//third_party:openvino",
+++++++++++++++        "//third_party:genai",
++++++++++++++         "//src/port:rapidjson_istreamwrapper",
++++++++++++++         "//src/port:rapidjson_error",
++++++++++++++         "embeddings_calculator_ov_cc_proto",
++++++++++++++diff --git a/src/tokenize/BUILD b/src/tokenize/BUILD
++++++++++++++index 5e8677b8..c32497a8 100644
++++++++++++++--- a/src/tokenize/BUILD
+++++++++++++++++ b/src/tokenize/BUILD
++++++++++++++@@ -24,6 +24,7 @@ ovms_cc_library(
++++++++++++++     deps = ["//src:libovmslogging",
++++++++++++++             "@mediapipe//mediapipe/framework:calculator_framework",
++++++++++++++             "//third_party:openvino",
+++++++++++++++            "//third_party:genai",
++++++++++++++             "@com_github_tencent_rapidjson//:rapidjson",
++++++++++++++             "//src/port:rapidjson_stringbuffer",
++++++++++++++             "//src/port:rapidjson_writer",
++++++++++++++-- 
++++++++++++++2.50.1.windows.1
++++++++++++++
+++++++++++++-- 
+++++++++++++2.50.1.windows.1
+++++++++++++
+ ++++++++++-- 
+ ++++++++++2.50.1.windows.1
+ ++++++++++
 -- 
 2.50.1.windows.1
 
