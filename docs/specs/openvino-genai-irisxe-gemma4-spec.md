@@ -368,9 +368,9 @@ Image input is a stretch goal (secondary). CPU-only fallback is an explicit **no
 | 3. Build & install `openvino` core wheel | ✅ Done | `openvino-2026.4.0-22498-cp314-cp314-win_amd64.whl` installed |
 | 4. Build & install `openvino_tokenizers` | ✅ Done | `openvino_tokenizers-2026.4.0.0-1-8cfe3eb80f9` installed |
 | 5. Build & install `openvino.genai` | ✅ Done | `openvino_genai-2026.4.0.0-1-790abd40056` installed |
-| 6. Download Gemma-4-26B-A4B-IT INT4 model | 🔄 Next | Run `huggingface-cli download` to `openvino-artifacts/models/...` |
-| 7. Run text-only GPU inference | ⏳ Pending | After model download completes |
-| 8. Report success or exact failure | ⏳ Pending | After inference test |
+| 6. Download Gemma-4-12B-IT INT4 QAT model | ✅ Done | Downloaded to `openvino-artifacts/models/gemma-4-12B-it-qat-int4-ov` |
+| 7. Run text-only GPU inference | ✅ Done | `VLMPipeline` executed successfully on GPU |
+| 8. Native OVMS VS 2026 compilation | ✅ Done | Compiled OVMS 2026.3.0 natively with MSVC 14.51 against GenAI 2026.4.0.0 |
 
 ## 12. Execution Plan (remaining steps)
 
@@ -545,9 +545,9 @@ The script starts at a configurable `max_new_tokens` (default 4096), generates a
 
 ## 16. OpenAI-Compatible Server Deployment
 
-OVMS v2026.2.1 could not serve the model because its bundled `openvino_genai` predates `gemma4_unified` support. Instead, a minimal **FastAPI** server wraps the working `openvino_genai.VLMPipeline` and exposes the same OpenAI-compatible endpoints.
+> **Evolution Note:** Prebuilt OVMS v2026.2.1 could not serve `gemma4_unified` models. Initially, a minimal FastAPI server was used as a prototype workaround. **This has now been completely resolved by compiling OVMS 2026.3.0 natively from source with Visual Studio 2026 BuildTools (MSVC 14.51)** linked against local OpenVINO GenAI 2026.4.0.0. Full native C++ OVMS serving is documented in [ovms-gemma4-irisxe-spec.md](ovms-gemma4-irisxe-spec.md) and [WIN2026_BUILD_GUIDE.md](../../WIN2026_BUILD_GUIDE.md).
 
-All server files live in the sibling artifacts folder:
+FastAPI prototype server files live in the sibling artifacts folder for reference:
 
 ```text
 C:\Users\mohds\Documents\GitHub\openvino-artifacts\
