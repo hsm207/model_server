@@ -177,6 +177,9 @@ build:windows --config=monolithic
 # Warnings are enabled in common_settings
 build:windows --copt=/W0 
 build:windows --host_copt=/W0
+# VS 2026 (MSVC 14.51.36231) emits C5285 for std::is_signed specializations in XLA.
+build:windows --copt=/wd5285
+build:windows --host_copt=/wd5285
 build:windows --copt=/external:anglebrackets
 build:windows --host_copt=/external:anglebrackets
 build:windows --copt=/external:W0
