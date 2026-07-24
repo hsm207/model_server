@@ -21,10 +21,13 @@ package(
 cc_library(
     name = "genai_headers",
     hdrs = glob([
-        "include/openvino/**/*.*"
+        "genai_hdrs/openvino/**/*.*",
     ]),
-    strip_include_prefix = "include",
+    strip_include_prefix = "genai_hdrs",
     visibility = ["//visibility:public"],
+    deps = [
+        "@windows_openvino//:openvino_new_headers",
+    ],
 )
 
 cc_import(
