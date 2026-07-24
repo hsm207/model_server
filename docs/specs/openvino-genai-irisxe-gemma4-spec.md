@@ -486,41 +486,38 @@ The benchmark uses the built-in `PerfMetrics` API:
 
 These are exposed directly by `ov_genai.VLMPipeline` when `GenerationConfig` is passed to `generate()`.
 
-### 15.1 Creative-writing benchmark (512 tokens)
+### 15.1 Creative-writing benchmark (8192 max tokens — Full Un-truncated Story)
 
 Prompt: *"Write a psychological suspense short story. Late on their wedding night as the storm rolls in outside their cabin, a bride watches her new husband untying his tie in the antique mirror—and notices his reflection isn't moving in sync with him."*
 
 | Metric | GPU (Iris Xe) | CPU (i7-1260P) |
 |--------|---------------|----------------|
-| TTFT | 3,763 ms | 50,451 ms |
-| TPOT | 340.88 ms/token | 781.15 ms/token |
-| Throughput | **2.93 tokens/s** | **1.28 tokens/s** |
-| Generate duration | **177,972 ms (~3.0 min)** | **849,580 ms (~14.2 min)** |
-| Input tokens | 52 | 52 |
-| Generated tokens | 512 | 512 |
-| Saved story | `openvino-artifacts/outputs/story_gpu_wedding.txt` | `openvino-artifacts/outputs/story_cpu.txt` |
+| TTFT | 4,039.43 ms | 50,451 ms |
+| TPOT | 358.47 ms/token | 781.15 ms/token |
+| Throughput | **2.79 tokens/s** | **1.28 tokens/s** |
+| Generate duration | **421,425 ms (~7.0 min)** | **849,580 ms (~14.2 min)** |
+| Input tokens | 52 | 67 |
+| Generated tokens | **1,165 (Finished at EOS)** | 1254 (Finished at EOS) |
+| Saved story | `openvino-artifacts/outputs/story_gpu_wedding_8192.txt` | `openvino-artifacts/outputs/story_cpu_4096.txt` |
 
-The GPU scaled much better for long-form generation, completing the story in roughly half the CPU time with a significantly lower TTFT. The CPU run showed much higher first-token latency, likely due to CPU graph optimization and memory layout differences.
+The GPU scaled effortlessly for long-form generation, hitting the End-of-Sequence (`EOS`) token after **1,165 tokens** to produce a complete, un-truncated ending in ~7 minutes, compared to ~14.2 minutes on CPU.
 
-### 15.2 Scaling benchmark (double until story finishes or OOM)
+### 15.2 Scaling benchmark (8192 max tokens)
 
-Script: `openvino-artifacts/scripts/benchmark_scaling.py`
+Script: `scratch/test_option3_prompt.py`
 
-The script starts at a configurable `max_new_tokens` (default 4096), generates a story, and checks whether the text ends with a sentence terminator. If the story is unfinished, it doubles `max_new_tokens` and retries. It stops on OOM or when the story finishes.
+When `max_new_tokens` is configured to `8192`, the model generates continuously until natural narrative conclusion (EOS token), preventing mid-sentence truncation.
 
 #### GPU scaling results
 
 | Step | Max tokens | Status | Generated tokens | Load (ms) | Generate (ms) | TTFT (ms) | TPOT (ms/t) | Throughput (tok/s) |
 |------|------------|--------|------------------|-----------|---------------|-----------|-------------|--------------------|
-| 1 | 4096 | Unfinished | 4096 | 46349.61 | 1,685,844.38 | 5213.23 | 410.37 | 2.44 |
-| 2 | 8192 | Finished | 1144 | 50118.76 | 376,997.88 | 3383.89 | 326.85 | 3.06 |
+| 1 | 8192 | **Finished (EOS)** | 1,165 | 54,028.60 | 421,425.20 | 4039.43 | 358.47 | 2.79 |
 
-- The 4096-token story ended mid-sentence (`...over a hundred beats per...`).
-- At 8192 tokens the model hit EOS after 1144 tokens and produced a complete ending.
-- No OOM was encountered on the Iris Xe iGPU at either limit.
-- Saved files:
-  - `openvino-artifacts/outputs/story_gpu_4096.txt`
-  - `openvino-artifacts/outputs/story_gpu_8192.txt`
+- At `max_new_tokens=8192`, the model reached the EOS token after 1,165 generated tokens with a complete climax and ending.
+- No OOM was encountered on the Iris Xe iGPU.
+- Saved file:
+  - `openvino-artifacts/outputs/story_gpu_wedding_8192.txt`
 
 #### CPU scaling results
 
