@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"name": "model_server",
+			"path": "."
+		},
+		{
+			"name": "openvino",
+			"path": "../openvino"
+		},
+		{
+			"name": "openvino.genai",
+			"path": "../openvino.genai"
+		},
+		{
+			"name": "openvino_tokenizers",
+			"path": "../openvino_tokenizers"
+		},
+		{
+			"name": "openvino-gemma4-12b",
+			"path": "../openvino-gemma4-12b"
+		},
+		{
+			"name": "openvino-artifacts",
+			"path": "../openvino-artifacts"
+		}
+	],
+	"settings": {}
+}
